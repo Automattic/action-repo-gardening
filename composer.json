@@ -13,15 +13,7 @@
 			"yarn build"
 		]
 	},
-	"repositories": [
-		{
-			"type": "path",
-			"url": "../../packages/*",
-			"options": {
-				"monorepo": true
-			}
-		}
-	],
+	"repositories": [],
 	"extra": {
 		"mirror-repo": "Automattic/action-repo-gardening",
 		"changelogger": {
