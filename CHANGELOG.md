@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Add a new task to notify Editorial team when we want their feedback.
+
 ### Changed
 - Automatically add "JS Package" PR label.
+- Expand list of labels to clean up after a PR has been merged.
+- Mark parameters that are not used by all tasks as optional.
 
 ### Fixed
 - handle production files for external use

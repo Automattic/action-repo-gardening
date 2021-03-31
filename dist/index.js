@@ -18470,6 +18470,7 @@ const cleanLabels = __nccwpck_require__( 3341 );
 const checkDescription = __nccwpck_require__( 3522 );
 const wpcomCommitReminder = __nccwpck_require__( 442 );
 const notifyDesign = __nccwpck_require__( 2425 );
+const notifyEditorial = __nccwpck_require__( 5817 );
 const debug = __nccwpck_require__( 1806 );
 const ifNotFork = __nccwpck_require__( 1524 );
 const ifNotClosed = __nccwpck_require__( 855 );
@@ -18503,6 +18504,11 @@ const automations = [
 		event: 'pull_request',
 		action: [ 'labeled' ],
 		task: ifNotClosed( notifyDesign ),
+	},
+	{
+		event: 'pull_request',
+		action: [ 'labeled' ],
+		task: ifNotClosed( notifyEditorial ),
 	},
 	{
 		event: 'push',
@@ -19574,9 +19580,14 @@ async function cleanLabels( payload, octokit ) {
 		'[Status] Needs Team Review',
 		'[Status] In Progress',
 		'[Status] Needs Author Reply',
+		'[Status] Needs Design',
 		'[Status] Needs Design Review',
+		'[Status] Design Input Requested',
 		'[Status] Needs i18n Review',
 		'[Status] String Freeze',
+		'[Status] Needs Copy',
+		'[Status] Needs Copy Review',
+		'[Status] Editorial Input Requested',
 	];
 
 	const labelsToRemoveFromPr = labelsOnPr.filter( label => labelsToRemove.includes( label ) );
@@ -19744,6 +19755,156 @@ async function notifyDesign( payload, octokit ) {
 }
 
 module.exports = notifyDesign;
+
+
+/***/ }),
+
+/***/ 5817:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/**
+ * External dependencies
+ */
+const { getInput, setFailed } = __nccwpck_require__( 2186 );
+
+/**
+ * Internal dependencies
+ */
+const debug = __nccwpck_require__( 1806 );
+const getLabels = __nccwpck_require__( 4077 );
+const sendSlackMessage = __nccwpck_require__( 4701 );
+
+/* global GitHub, WebhookPayloadPullRequest */
+
+/**
+ * Check for an Copy Review status label on a PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR number.
+ *
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasNeedsCopyReviewLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the Needs Copy Review label.
+	return labels.includes( '[Status] Needs Copy Review' );
+}
+
+/**
+ * Check for a Needs Copy label on a PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR number.
+ *
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasNeedsCopyLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the Needs Copy label.
+	return labels.includes( '[Status] Needs Copy' );
+}
+
+/**
+ * Check for an Editorial Input Requested label on a PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR number.
+ *
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasEditorialInputRequestedLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the Editorial Input Requested label.
+	return labels.includes( '[Status] Editorial Input Requested' );
+}
+
+/**
+ * Send a Slack notification about a label to the Editorial team.
+ *
+ * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
+ * @param {GitHub}                    octokit - Initialized Octokit REST client.
+ */
+async function notifyEditorial( payload, octokit ) {
+	const { number, repository } = payload;
+	const { owner, name: repo } = repository;
+	const ownerLogin = owner.login;
+
+	const slackToken = getInput( 'slack_token' );
+	if ( ! slackToken ) {
+		setFailed( `notify-editorial: Input slack_token is required but missing. Aborting.` );
+		return;
+	}
+
+	const channel = getInput( 'slack_editorial_channel' );
+	if ( ! channel ) {
+		setFailed(
+			`notify-editorial: Input slack_editorial_channel is required but missing. Aborting.`
+		);
+		return;
+	}
+
+	// Check if editorial input was already requested for that PR.
+	const hasBeenRequested = await hasEditorialInputRequestedLabel(
+		octokit,
+		ownerLogin,
+		repo,
+		number
+	);
+	if ( hasBeenRequested ) {
+		debug(
+			`notify-editorial: Editorial input was already requested for PR #${ number }. Aborting.`
+		);
+		return;
+	}
+
+	// Check for a Needs Copy Review label.
+	const isLabeledForCopy = await hasNeedsCopyLabel( octokit, ownerLogin, repo, number );
+	if ( isLabeledForCopy ) {
+		debug(
+			`notify-editorial: Found a Needs Copy label on PR #${ number }. Sending in Slack message.`
+		);
+		await sendSlackMessage(
+			`Someone would be interested in input from the Editorial team on this topic.`,
+			channel,
+			slackToken,
+			payload
+		);
+	}
+
+	// Check for a Needs Copy Review label.
+	const isLabeledForReview = await hasNeedsCopyReviewLabel( octokit, ownerLogin, repo, number );
+	if ( isLabeledForReview ) {
+		debug(
+			`notify-editorial: Found a Needs Copy Review label on PR #${ number }. Sending in Slack message.`
+		);
+		await sendSlackMessage(
+			`Someone is looking for a review from the Editorial team.`,
+			channel,
+			slackToken,
+			payload
+		);
+	}
+
+	if ( isLabeledForCopy || isLabeledForReview ) {
+		debug(
+			`notify-editorial: Adding a label to PR #${ number } to show that design input was requested.`
+		);
+		await octokit.issues.addLabels( {
+			owner: ownerLogin,
+			repo,
+			issue_number: number,
+			labels: [ '[Status] Editorial Input Requested' ],
+		} );
+	}
+}
+
+module.exports = notifyEditorial;
 
 
 /***/ }),
