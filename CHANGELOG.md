@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Add a new task to notify Editorial team when we want their feedback.
+- Added autotagger action to simplify releases
 
 ### Changed
 - Automatically add "JS Package" PR label.
