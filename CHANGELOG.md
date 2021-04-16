@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Add new Flag OSS task: flags entries by external contributors, adds an "OSS Citizen" label to the PR, and sends a Slack message.
+
 ### Changed
 - Description task: do not add the "Needs Author Reply" label if the PR is still being worked on (the "In Progress" label is in use).
 

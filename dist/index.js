@@ -18471,6 +18471,7 @@ const checkDescription = __nccwpck_require__( 3522 );
 const wpcomCommitReminder = __nccwpck_require__( 442 );
 const notifyDesign = __nccwpck_require__( 2425 );
 const notifyEditorial = __nccwpck_require__( 5817 );
+const flagOss = __nccwpck_require__( 6351 );
 const debug = __nccwpck_require__( 1806 );
 const ifNotFork = __nccwpck_require__( 1524 );
 const ifNotClosed = __nccwpck_require__( 855 );
@@ -18513,6 +18514,11 @@ const automations = [
 	{
 		event: 'push',
 		task: wpcomCommitReminder,
+	},
+	{
+		event: 'pull_request_target',
+		action: [ 'opened' ],
+		task: flagOss,
 	},
 ];
 
@@ -19634,6 +19640,71 @@ async function cleanLabels( payload, octokit ) {
 }
 
 module.exports = cleanLabels;
+
+
+/***/ }),
+
+/***/ 6351:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/**
+ * External dependencies
+ */
+const { getInput, setFailed } = __nccwpck_require__( 2186 );
+
+/**
+ * Internal dependencies
+ */
+const debug = __nccwpck_require__( 1806 );
+const sendSlackMessage = __nccwpck_require__( 4701 );
+
+/* global GitHub, WebhookPayloadPullRequest */
+
+/**
+ * Adds the OSS Citizen label to all PRs opened from a fork, and send a slack message.
+ *
+ * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
+ * @param {GitHub}                    octokit - Initialized Octokit REST client.
+ */
+async function flagOss( payload, octokit ) {
+	const { number, repository, pull_request } = payload;
+	const { head, base } = pull_request;
+	const { owner, name } = repository;
+
+	if ( head.repo.full_name === base.repo.full_name ) {
+		return;
+	}
+
+	debug( `flag-oss: Adding OSS Citizen label to PR #${ number }` );
+	await octokit.issues.addLabels( {
+		owner: owner.login,
+		repo: name,
+		issue_number: number,
+		labels: [ 'OSS Citizen' ],
+	} );
+
+	const slackToken = getInput( 'slack_token' );
+	if ( ! slackToken ) {
+		setFailed( `flag-oss: Input slack_token is required but missing. Aborting.` );
+		return;
+	}
+
+	const channel = getInput( 'slack_team_channel' );
+	if ( ! channel ) {
+		setFailed( `flag-oss: Input slack_team_channel is required but missing. Aborting.` );
+		return;
+	}
+
+	debug( `flag-oss: Sending in OSS Slack message about PR #${ number }.` );
+	await sendSlackMessage(
+		`An external contributor submitted this PR. Be sure to go welcome them! 👏`,
+		channel,
+		slackToken,
+		payload
+	);
+}
+
+module.exports = flagOss;
 
 
 /***/ }),
