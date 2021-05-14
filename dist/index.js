@@ -18222,6 +18222,9 @@ module.exports = getAssociatedPullRequest;
 /* global GitHub */
 const debug = __nccwpck_require__( 1806 );
 
+// Cache for getFiles.
+const cache = {};
+
 /**
  * Get list of files modified in PR.
  *
@@ -18234,8 +18237,13 @@ const debug = __nccwpck_require__( 1806 );
  */
 async function getFiles( octokit, owner, repo, number ) {
 	const fileList = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-files: Returning list of files modified ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
 
-	debug( 'add-labels: Get list of files modified in this PR.' );
+	debug( `get-files: Get list of files modified in ${ cacheKey }.` );
 
 	for await ( const response of octokit.paginate.iterator( octokit.pulls.listFiles, {
 		owner,
@@ -18248,6 +18256,7 @@ async function getFiles( octokit, owner, repo, number ) {
 		} );
 	}
 
+	cache[ cacheKey ] = fileList;
 	return fileList;
 }
 
@@ -18257,9 +18266,13 @@ module.exports = getFiles;
 /***/ }),
 
 /***/ 4077:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 /* global GitHub */
+const debug = __nccwpck_require__( 1806 );
+
+// Cache for getLabels.
+const cache = {};
 
 /**
  * Get labels on a PR.
@@ -18273,17 +18286,26 @@ module.exports = getFiles;
  */
 async function getLabels( octokit, owner, repo, number ) {
 	const labelList = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-labels: Returning list of lables on ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-labels: Get list of labels on ${ cacheKey }.` );
 
 	for await ( const response of octokit.paginate.iterator( octokit.issues.listLabelsOnIssue, {
 		owner,
 		repo,
 		issue_number: +number,
+		per_page: 100,
 	} ) ) {
 		response.data.map( label => {
 			labelList.push( label.name );
 		} );
 	}
 
+	cache[ cacheKey ] = labelList;
 	return labelList;
 }
 
