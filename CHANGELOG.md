@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Check Description task: update changelogger instructions to recommend the use of the CLI tool.
+- Labels: handle Jetpack Boost plugin structure when automatically managing labels.
 - Updated package dependencies
 - Updated package dependencies
 - Updated package dependencies

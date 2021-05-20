@@ -18634,6 +18634,11 @@ function cleanName( name ) {
 		name = 'Star Rating';
 	}
 
+	// render-blocking-js is a Boost feature.
+	if ( name === 'render-blocking-js' ) {
+		name = 'Defer Non-Essential JS';
+	}
+
 	return (
 		name
 			// Break up words
@@ -18714,7 +18719,7 @@ async function getLabelsToAdd( octokit, owner, repo, number ) {
 		}
 
 		// Docker.
-		const docker = file.match( /^tools\/docker\// );
+		const docker = file.match( /^(docker|tools\/docker)\// );
 		if ( docker !== null ) {
 			keywords.add( 'Docker' );
 		}
@@ -18738,8 +18743,8 @@ async function getLabelsToAdd( octokit, owner, repo, number ) {
 			keywords.add( `[Block] ${ cleanName( blockName ) }` );
 		}
 
-		// React Dashboard.
-		const reactAdmin = file.match( /^projects\/plugins\/jetpack\/_inc\/client\// );
+		// React Dashboard and Boost Admin.
+		const reactAdmin = file.match( /^(app\/admin|projects\/plugins\/jetpack\/_inc\/client)\// );
 		if ( reactAdmin !== null ) {
 			keywords.add( 'Admin Page' );
 		}
@@ -18756,6 +18761,19 @@ async function getLabelsToAdd( octokit, owner, repo, number ) {
 		const wpcomApi = file.match( /^projects\/plugins\/jetpack\/json-endpoints\// );
 		if ( wpcomApi !== null ) {
 			keywords.add( 'WPCOM API' );
+		}
+
+		// Boost Critical CSS.
+		const boostModules = file.match( /^app\/modules\/(?<boostModule>[^/]*)\// );
+		const boostModuleName = boostModules && boostModules.groups.boostModule;
+		if ( boostModuleName ) {
+			keywords.add( `[Block] ${ cleanName( boostModuleName ) }` );
+		}
+
+		// Compatibility with 3rd party tools (Boost and Jetpack).
+		const compat = file.match( /^(compatibility|projects\/plugins\/jetpack\/3rd-party)\// );
+		if ( compat ) {
+			keywords.add( 'Compatibility' );
 		}
 	} );
 
