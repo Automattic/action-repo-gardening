@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Fixed
+- Milestone detection: fallback to any milestone when we cannot find any with a due date.
+
 ## [1.3.0] - 2021-05-28
 ### Fixed
 - Slack notification tasks: both tasks now listen for `pull_request_target` events so they can be run on PRs opened from forks.
