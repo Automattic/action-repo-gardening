@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Changed
+- Updated `@actions/github` with attendent code adjustments.
+
 ### Fixed
 - Milestone detection: fallback to any milestone when we cannot find any with a due date.
 
