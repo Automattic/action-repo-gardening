@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Updated `@actions/github` with attendent code adjustments.
+- Update node version requirement to 14.16.1
 
 ### Fixed
 - Milestone detection: fallback to any milestone when we cannot find any with a due date.
