@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Included e2e test report url in PR bot comment
 
 ### Changed
+- jslint formatting.
 - Updated `@actions/github` with attendent code adjustments.
 - Update node version requirement to 14.16.1
 
