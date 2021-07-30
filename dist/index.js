@@ -18439,7 +18439,6 @@ module.exports = getAffectedChangeloggerProjects;
  * cannot be determined.
  *
  * @param {WebhookPayloadPushCommit} commit - Commit object.
- *
  * @returns {number?} Pull request number, or null if it cannot be determined.
  */
 function getAssociatedPullRequest( commit ) {
@@ -18468,7 +18467,6 @@ const cache = {};
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<Array>} Promise resolving to an array of all files modified in  that PR.
  */
 async function getFiles( octokit, owner, repo, number ) {
@@ -18517,7 +18515,6 @@ const cache = {};
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<Array>} Promise resolving to an array of all labels for that PR.
  */
 async function getLabels( octokit, owner, repo, number ) {
@@ -18568,7 +18565,6 @@ const compareVersions = __nccwpck_require__( 3314 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} plugin  - Plugin slug.
- *
  * @returns {Promise<OktokitIssuesListMilestonesForRepoResponseItem|void>} Promise resolving to milestone, if exists.
  */
 async function getNextValidMilestone( octokit, owner, repo, plugin = 'jetpack' ) {
@@ -18622,7 +18618,6 @@ const getLabels = __nccwpck_require__( 4411 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR / Issue number.
- *
  * @returns {Promise<Array>} Promise resolving to an array of all the plugins touched by that PR.
  */
 async function getPluginNames( octokit, owner, repo, number ) {
@@ -18658,7 +18653,6 @@ const debug = __nccwpck_require__( 5585 );
  * handler only if the PR is not currently closed.
  *
  * @param {WPAutomationTask} handler - Original task.
- *
  * @returns {WPAutomationTask} Enhanced task.
  */
 function ifNotClosed( handler ) {
@@ -18693,7 +18687,6 @@ const debug = __nccwpck_require__( 5585 );
  * pull request event which did not originate from a forked repository.
  *
  * @param {WPAutomationTask} handler - Original task.
- *
  * @returns {WPAutomationTask} Enhanced task.
  */
 function ifNotFork( handler ) {
@@ -18729,7 +18722,6 @@ const fetch = __nccwpck_require__( 4666 );
  * @param {string}                    channel - Slack channel ID.
  * @param {string}                    token   - Slack token.
  * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
- *
  * @returns {Promise<boolean>} Promise resolving to a boolean, whether message was successfully posted or not.
  */
 async function sendSlackMessage( message, channel, token, payload ) {
@@ -18819,7 +18811,6 @@ const getFiles = __nccwpck_require__( 8083 );
  * - Capitalize.
  *
  * @param {string} name - Feature name.
- *
  * @returns {string} Cleaned up feature name.
  */
 function cleanName( name ) {
@@ -18896,7 +18887,6 @@ function cleanName( name ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<Array>} Promise resolving to an array of keywords we'll search for.
  */
 async function getLabelsToAdd( octokit, owner, repo, number ) {
@@ -19216,7 +19206,6 @@ const getPluginNames = __nccwpck_require__( 7313 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasUnverifiedCommit( octokit, owner, repo, number ) {
@@ -19240,7 +19229,6 @@ async function hasUnverifiedCommit( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasStatusLabels( octokit, owner, repo, number ) {
@@ -19256,7 +19244,6 @@ async function hasStatusLabels( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasNeedsReviewLabel( octokit, owner, repo, number ) {
@@ -19272,7 +19259,6 @@ async function hasNeedsReviewLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasProgressLabel( octokit, owner, repo, number ) {
@@ -19286,7 +19272,6 @@ async function hasProgressLabel( octokit, owner, repo, number ) {
  *
  * @param {string} plugin        - Plugin name.
  * @param {object} nextMilestone - Information about next milestone as returnde by GitHub.
- *
  * @returns {Promise<string>} Promise resolving to info about the release (code freeze, release date).
  */
 async function getMilestoneDates( plugin, nextMilestone ) {
@@ -19340,7 +19325,6 @@ async function getMilestoneDates( plugin, nextMilestone ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<string>} Promise resolving to info about the next release for that plugin.
  */
 async function buildMilestoneInfo( octokit, owner, repo, number ) {
@@ -19370,7 +19354,6 @@ async function buildMilestoneInfo( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<number>} Promise resolving to boolean.
  */
 async function getCheckComment( octokit, owner, repo, number ) {
@@ -19402,7 +19385,6 @@ async function getCheckComment( octokit, owner, repo, number ) {
  * @param {boolean} isFailure - Boolean condition to determine if check failed.
  * @param {string} checkMessage - Sentence describing successful check.
  * @param {string} severity - Optional. Check severity. Could be one of `error`, `warning`, `notice`
- *
  * @returns {string} - List item with status emoji and a sentence describing check.
  */
 function statusEntry( isFailure, checkMessage, severity = 'error' ) {
@@ -19424,7 +19406,6 @@ function statusEntry( isFailure, checkMessage, severity = 'error' ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Array} - list of affected projects without changelog entry
  */
 async function getChangelogEntries( octokit, owner, repo, number ) {
@@ -19467,7 +19448,6 @@ async function getChangelogEntries( octokit, owner, repo, number ) {
  *
  * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
  * @param {GitHub}                    octokit - Initialized Octokit REST client.
- *
  * @returns {string} List of checks with appropriate status emojis.
  */
 async function getStatusChecks( payload, octokit ) {
@@ -19499,7 +19479,6 @@ async function getStatusChecks( payload, octokit ) {
  * Compose a list of checks for the PR
  *
  * @param {object} statusChecks - Map of all checks with boolean as a value
- *
  * @returns {string} part of the comment with list of checks
  */
 function renderStatusChecks( statusChecks ) {
@@ -19553,7 +19532,6 @@ function renderStatusChecks( statusChecks ) {
  * Compose a list of recommendations based on failed checks
  *
  * @param {object} statusChecks - Map of all checks with boolean as a value
- *
  * @returns {string} part of the comment with recommendations
  */
 function renderRecommendations( statusChecks ) {
@@ -19909,7 +19887,6 @@ const sendSlackMessage = __nccwpck_require__( 3350 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasNeedsDesignReviewLabel( octokit, owner, repo, number ) {
@@ -19925,7 +19902,6 @@ async function hasNeedsDesignReviewLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasNeedsDesignLabel( octokit, owner, repo, number ) {
@@ -19941,7 +19917,6 @@ async function hasNeedsDesignLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasDesignInputRequestedLabel( octokit, owner, repo, number ) {
@@ -20050,7 +20025,6 @@ const sendSlackMessage = __nccwpck_require__( 3350 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasNeedsCopyReviewLabel( octokit, owner, repo, number ) {
@@ -20066,7 +20040,6 @@ async function hasNeedsCopyReviewLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasNeedsCopyLabel( octokit, owner, repo, number ) {
@@ -20082,7 +20055,6 @@ async function hasNeedsCopyLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasEditorialInputRequestedLabel( octokit, owner, repo, number ) {
@@ -20195,7 +20167,6 @@ const getAssociatedPullRequest = __nccwpck_require__( 6957 );
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<string>} Promise resolving to a string.
  */
 async function getMatticBotComment( octokit, owner, repo, number ) {
@@ -20228,7 +20199,6 @@ async function getMatticBotComment( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - PR number.
- *
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
 async function hasReminderComment( octokit, owner, repo, number ) {
