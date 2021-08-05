@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - jslint formatting.
+- Labels: update label names to match new naming convention in use in the monorepo.
 - Labels task: update paths to support new location of the Boost plugin.
 - Updated `@actions/github` with attendent code adjustments.
 - Update node version requirement to 14.16.1
