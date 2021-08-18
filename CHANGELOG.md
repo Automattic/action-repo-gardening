@@ -12,6 +12,7 @@ This is an alpha version! The changes listed here are not final.
 ### Added
 - Add E2E Tests label in gardening
 - Included e2e test report url in PR bot comment
+- New task: triage newly opened issues to add the proper product labels.
 
 ### Changed
 - jslint formatting.

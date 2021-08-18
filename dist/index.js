@@ -20154,6 +20154,48 @@ module.exports = notifyEditorial;
 
 /***/ }),
 
+/***/ 4954:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/**
+ * Internal dependencies
+ */
+const debug = __nccwpck_require__( 5585 );
+
+/* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Add labels to newly opened issues.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {GitHub}              octokit - Initialized Octokit REST client.
+ */
+async function triageNewIssues( payload, octokit ) {
+	const { issue, repository } = payload;
+	const { number, body } = issue;
+	const { owner, name } = repository;
+
+	const regex = /###\sImpacted\splugin\n\n(\w*)\n/gm;
+
+	let match;
+	while ( ( match = regex.exec( body ) ) ) {
+		const [ , plugin ] = match;
+		debug( `triage-new-issues: Adding label to issue #${ number }` );
+
+		await octokit.rest.issues.addLabels( {
+			owner: owner.login,
+			repo: name,
+			issue_number: number,
+			labels: [ `[Plugin] ${ plugin }` ],
+		} );
+	}
+}
+
+module.exports = triageNewIssues;
+
+
+/***/ }),
+
 /***/ 9830:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -20542,6 +20584,7 @@ const wpcomCommitReminder = __nccwpck_require__( 9830 );
 const notifyDesign = __nccwpck_require__( 30 );
 const notifyEditorial = __nccwpck_require__( 7688 );
 const flagOss = __nccwpck_require__( 8535 );
+const triageNewIssues = __nccwpck_require__( 4954 );
 const debug = __nccwpck_require__( 5585 );
 const ifNotFork = __nccwpck_require__( 1034 );
 const ifNotClosed = __nccwpck_require__( 6210 );
@@ -20589,6 +20632,11 @@ const automations = [
 		event: 'pull_request_target',
 		action: [ 'opened' ],
 		task: flagOss,
+	},
+	{
+		event: 'issues',
+		action: [ 'opened', 'reopened' ],
+		task: triageNewIssues,
 	},
 ];
 
