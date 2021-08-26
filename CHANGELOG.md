@@ -5,21 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.0-alpha] - unreleased
-
-This is an alpha version! The changes listed here are not final.
-
+## [1.4.0] - 2021-08-26
 ### Added
-- Add E2E Tests label in gardening
-- Included e2e test report url in PR bot comment
+- Add E2E Tests label in gardening.
+- Include e2e test report url in PR bot comment.
 - New task: triage newly opened issues to add the proper product labels.
 
 ### Changed
 - jslint formatting.
 - Labels: update label names to match new naming convention in use in the monorepo.
 - Labels task: update paths to support new location of the Boost plugin.
-- Updated `@actions/github` with attendent code adjustments.
-- Update node version requirement to 14.16.1
+- Update `@actions/github` with attendent code adjustments.
+- Update node version requirement to 14.16.1.
 
 ### Fixed
 - Milestone detection: fallback to any milestone when we cannot find any with a due date.
@@ -65,7 +62,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[1.4.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v1.3.0...v1.4.0-alpha
+[1.4.0]: https://github.com/Automattic/action-repo-gardening/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Automattic/action-repo-gardening/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/Automattic/action-repo-gardening/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Automattic/action-repo-gardening/compare/v1.2.0...v1.2.1
