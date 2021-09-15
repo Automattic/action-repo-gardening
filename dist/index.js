@@ -18362,6 +18362,7 @@ module.exports = debug;
 
 const glob = __nccwpck_require__( 8111 );
 const fs = __nccwpck_require__( 5747 );
+const getPrWorkspace = __nccwpck_require__( 6125 );
 
 /**
  * Returns a list of Projects that use changelogger package
@@ -18370,7 +18371,7 @@ const fs = __nccwpck_require__( 5747 );
  */
 function getChangeloggerProjects() {
 	const projects = [];
-	const composerFiles = glob.sync( process.env.GITHUB_WORKSPACE + '/projects/*/*/composer.json' );
+	const composerFiles = glob.sync( getPrWorkspace() + '/projects/*/*/composer.json' );
 	composerFiles.forEach( file => {
 		const json = JSON.parse( fs.readFileSync( file ) );
 		if (
@@ -18634,6 +18635,27 @@ async function getPluginNames( octokit, owner, repo, number ) {
 }
 
 module.exports = getPluginNames;
+
+
+/***/ }),
+
+/***/ 6125:
+/***/ ((module) => {
+
+/**
+ * Get the path to the PR workspace.
+ *
+ * @returns {string} Path.
+ */
+function getPrWorkspace() {
+	if ( 'undefined' !== typeof process.env.PR_WORKSPACE ) {
+		return process.env.PR_WORKSPACE;
+	}
+
+	throw new Error( 'Environment variable PR_WORKSPACE is not defined.' );
+}
+
+module.exports = getPrWorkspace;
 
 
 /***/ }),
@@ -19206,6 +19228,7 @@ const getFiles = __nccwpck_require__( 8083 );
 const getLabels = __nccwpck_require__( 4411 );
 const getNextValidMilestone = __nccwpck_require__( 9432 );
 const getPluginNames = __nccwpck_require__( 7313 );
+const getPrWorkspace = __nccwpck_require__( 6125 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -19419,19 +19442,20 @@ function statusEntry( isFailure, checkMessage, severity = 'error' ) {
  * @returns {Array} - list of affected projects without changelog entry
  */
 async function getChangelogEntries( octokit, owner, repo, number ) {
+	const baseDir = getPrWorkspace();
 	const files = await getFiles( octokit, owner, repo, number );
 	const affectedProjects = getAffectedChangeloggerProjects( files );
 	debug( `check-description: affected changelogger projects: ${ affectedProjects }` );
 
 	return affectedProjects.reduce( ( acc, project ) => {
-		const composerFile = process.env.GITHUB_WORKSPACE + `/projects/${ project }/composer.json`;
+		const composerFile = `${ baseDir }/projects/${ project }/composer.json`;
 		const json = JSON.parse( fs.readFileSync( composerFile ) );
 		// Changelog directory could customized via .extra.changelogger.changes-dir in composer.json. Lets check for it.
 		const changelogDir =
 			path.relative(
-				process.env.GITHUB_WORKSPACE,
+				baseDir,
 				path.resolve(
-					process.env.GITHUB_WORKSPACE + `/projects/${ project }`,
+					`${ baseDir }/projects/${ project }`,
 					( json.extra && json.extra.changelogger && json.extra.changelogger[ 'changes-dir' ] ) ||
 						'changelog'
 				)
@@ -20595,7 +20619,7 @@ const ifNotClosed = __nccwpck_require__( 6210 );
 
 const automations = [
 	{
-		event: 'pull_request',
+		event: 'pull_request_target',
 		action: [ 'opened', 'synchronize', 'edited' ],
 		task: ifNotFork( assignIssues ),
 	},
@@ -20604,19 +20628,20 @@ const automations = [
 		task: addMilestone,
 	},
 	{
-		event: 'pull_request',
+		event: 'pull_request_target',
 		action: [ 'opened', 'reopened', 'synchronize', 'edited', 'labeled' ],
 		task: ifNotClosed( addLabels ),
 	},
 	{
-		event: 'pull_request',
+		event: 'pull_request_target',
 		action: [ 'closed' ],
 		task: cleanLabels,
 	},
 	{
-		event: 'pull_request',
+		event: 'pull_request_target',
 		action: [ 'opened', 'reopened', 'synchronize', 'edited', 'labeled' ],
 		task: ifNotClosed( checkDescription ),
+		// Note this task requires a PR checkout. See README.md for details.
 	},
 	{
 		event: 'pull_request_target',
