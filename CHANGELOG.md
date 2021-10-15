@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 - Label Task: handle new block plugin type
 - Updated package dependencies.
 - Updated package dependencies.
+- Update regex for e2e tests paths to add relevant labels in PRs
 - Use Node 16.7.0 in tooling. This shouldn't change the behavior of the code itself.
 
 ## [1.4.0] - 2021-08-26
