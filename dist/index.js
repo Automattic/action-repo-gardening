@@ -18974,6 +18974,10 @@ async function getLabelsToAdd( octokit, owner, repo, number ) {
 			if ( project.groups.ptype === 'github-actions' ) {
 				keywords.add( 'Actions' );
 			}
+
+			if ( project.groups.ptype === 'js-packages' ) {
+				keywords.add( 'RNA' );
+			}
 		}
 
 		// Modules.

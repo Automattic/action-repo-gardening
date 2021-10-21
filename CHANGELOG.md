@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Automatically add the RNA label to PRs.
+
 ### Changed
 - Allow Node ^14.17.6 to be used in this project. This shouldn't change the behavior of the code itself.
 - BREAKING: Use `pull_request_target` instead of `pull_request` for the following tasks: assignIssues, addLabels, cleanLabels, checkDescription.
