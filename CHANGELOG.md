@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 ### Fixed
 - Milestone management: avoid throwing an error when a valid milestone cannot be found. Abort task instead.
 - Only hit the milestones endpoint once per run.
+- When a file is renamed, treat both the old and new names as modified.
 
 ## [2.0.2] - 2022-02-09
 ### Changed
