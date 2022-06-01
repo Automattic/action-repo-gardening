@@ -17638,9 +17638,6 @@ module.exports = getLabels;
 /***/ 9432:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const moment = __nccwpck_require__( 3048 );
 const compareVersions = __nccwpck_require__( 3314 );
 
@@ -17717,9 +17714,6 @@ module.exports = getNextValidMilestone;
 
 /* global GitHub */
 
-/**
- * Internal dependencies
- */
 const getLabels = __nccwpck_require__( 4411 );
 
 /**
@@ -17773,9 +17767,6 @@ module.exports = getPrWorkspace;
 /***/ 6210:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 
 /* global WPAutomationTask */
@@ -17806,9 +17797,6 @@ module.exports = ifNotClosed;
 /***/ 1034:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 
 /* global WPAutomationTask */
@@ -17840,9 +17828,6 @@ module.exports = ifNotFork;
 /***/ 3350:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const fetch = __nccwpck_require__( 5660 );
 
 /* global WebhookPayloadPullRequest */
@@ -17928,9 +17913,6 @@ module.exports = sendSlackMessage;
 /***/ 9096:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getFiles = __nccwpck_require__( 8083 );
 
@@ -18197,9 +18179,6 @@ module.exports = addLabels;
 /***/ 2961:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getAssociatedPullRequest = __nccwpck_require__( 6957 );
 const getNextValidMilestone = __nccwpck_require__( 9432 );
@@ -18279,9 +18258,6 @@ module.exports = addMilestone;
 /***/ 6676:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 
 /* global GitHub, WebhookPayloadPullRequest */
@@ -18327,16 +18303,9 @@ module.exports = assignIssues;
 /***/ 7366:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const fs = __nccwpck_require__( 5747 );
 const moment = __nccwpck_require__( 3048 );
 const path = __nccwpck_require__( 5622 );
-
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getAffectedChangeloggerProjects = __nccwpck_require__( 679 );
 const getFiles = __nccwpck_require__( 8083 );
@@ -18874,9 +18843,6 @@ module.exports = checkDescription;
 /***/ 8723:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getLabels = __nccwpck_require__( 4411 );
 
@@ -18951,14 +18917,7 @@ module.exports = cleanLabels;
 /***/ 8535:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const sendSlackMessage = __nccwpck_require__( 3350 );
 
@@ -19016,14 +18975,7 @@ module.exports = flagOss;
 /***/ 30:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getLabels = __nccwpck_require__( 4411 );
 const sendSlackMessage = __nccwpck_require__( 3350 );
@@ -19154,14 +19106,7 @@ module.exports = notifyDesign;
 /***/ 7688:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * External dependencies
- */
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getLabels = __nccwpck_require__( 4411 );
 const sendSlackMessage = __nccwpck_require__( 3350 );
@@ -19301,9 +19246,6 @@ module.exports = notifyEditorial;
 /***/ 4954:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 
 /* global GitHub, WebhookPayloadIssue */
@@ -19343,9 +19285,6 @@ module.exports = triageNewIssues;
 /***/ 9830:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-/**
- * Internal dependencies
- */
 const debug = __nccwpck_require__( 5585 );
 const getAssociatedPullRequest = __nccwpck_require__( 6957 );
 
@@ -19654,15 +19593,8 @@ module.exports = require("zlib");;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-/**
- * External dependencies
- */
 const { setFailed, getInput } = __nccwpck_require__( 6379 );
 const { context, getOctokit } = __nccwpck_require__( 8025 );
-
-/**
- * Internal dependencies
- */
 const assignIssues = __nccwpck_require__( 6676 );
 const addMilestone = __nccwpck_require__( 2961 );
 const addLabels = __nccwpck_require__( 9096 );
