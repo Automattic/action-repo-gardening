@@ -17444,8 +17444,8 @@ module.exports = debug;
 /***/ 679:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const glob = __nccwpck_require__( 8111 );
 const fs = __nccwpck_require__( 5747 );
+const glob = __nccwpck_require__( 8111 );
 const getPrWorkspace = __nccwpck_require__( 6125 );
 
 /**
@@ -17587,7 +17587,7 @@ module.exports = getFiles;
 
 /***/ }),
 
-/***/ 4411:
+/***/ 9172:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 /* global GitHub */
@@ -17638,8 +17638,8 @@ module.exports = getLabels;
 /***/ 9432:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const moment = __nccwpck_require__( 3048 );
 const compareVersions = __nccwpck_require__( 3314 );
+const moment = __nccwpck_require__( 3048 );
 
 /* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
 
@@ -17714,7 +17714,7 @@ module.exports = getNextValidMilestone;
 
 /* global GitHub */
 
-const getLabels = __nccwpck_require__( 4411 );
+const getLabels = __nccwpck_require__( 9172 );
 
 /**
  * Get the name of the plugin concerned by this PR.
@@ -17910,7 +17910,7 @@ module.exports = sendSlackMessage;
 
 /***/ }),
 
-/***/ 9096:
+/***/ 4411:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const debug = __nccwpck_require__( 5585 );
@@ -18304,12 +18304,12 @@ module.exports = assignIssues;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const fs = __nccwpck_require__( 5747 );
-const moment = __nccwpck_require__( 3048 );
 const path = __nccwpck_require__( 5622 );
+const moment = __nccwpck_require__( 3048 );
 const debug = __nccwpck_require__( 5585 );
 const getAffectedChangeloggerProjects = __nccwpck_require__( 679 );
 const getFiles = __nccwpck_require__( 8083 );
-const getLabels = __nccwpck_require__( 4411 );
+const getLabels = __nccwpck_require__( 9172 );
 const getNextValidMilestone = __nccwpck_require__( 9432 );
 const getPluginNames = __nccwpck_require__( 7313 );
 const getPrWorkspace = __nccwpck_require__( 6125 );
@@ -18844,7 +18844,7 @@ module.exports = checkDescription;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 4411 );
+const getLabels = __nccwpck_require__( 9172 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18977,7 +18977,7 @@ module.exports = flagOss;
 
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
 const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 4411 );
+const getLabels = __nccwpck_require__( 9172 );
 const sendSlackMessage = __nccwpck_require__( 3350 );
 
 /* global GitHub, WebhookPayloadPullRequest */
@@ -19108,7 +19108,7 @@ module.exports = notifyDesign;
 
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
 const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 4411 );
+const getLabels = __nccwpck_require__( 9172 );
 const sendSlackMessage = __nccwpck_require__( 3350 );
 
 /* global GitHub, WebhookPayloadPullRequest */
@@ -19595,19 +19595,19 @@ var __webpack_exports__ = {};
 (() => {
 const { setFailed, getInput } = __nccwpck_require__( 6379 );
 const { context, getOctokit } = __nccwpck_require__( 8025 );
-const assignIssues = __nccwpck_require__( 6676 );
+const debug = __nccwpck_require__( 5585 );
+const ifNotClosed = __nccwpck_require__( 6210 );
+const ifNotFork = __nccwpck_require__( 1034 );
+const addLabels = __nccwpck_require__( 4411 );
 const addMilestone = __nccwpck_require__( 2961 );
-const addLabels = __nccwpck_require__( 9096 );
-const cleanLabels = __nccwpck_require__( 8723 );
+const assignIssues = __nccwpck_require__( 6676 );
 const checkDescription = __nccwpck_require__( 7366 );
-const wpcomCommitReminder = __nccwpck_require__( 9830 );
+const cleanLabels = __nccwpck_require__( 8723 );
+const flagOss = __nccwpck_require__( 8535 );
 const notifyDesign = __nccwpck_require__( 30 );
 const notifyEditorial = __nccwpck_require__( 7688 );
-const flagOss = __nccwpck_require__( 8535 );
 const triageNewIssues = __nccwpck_require__( 4954 );
-const debug = __nccwpck_require__( 5585 );
-const ifNotFork = __nccwpck_require__( 1034 );
-const ifNotClosed = __nccwpck_require__( 6210 );
+const wpcomCommitReminder = __nccwpck_require__( 9830 );
 
 const automations = [
 	{

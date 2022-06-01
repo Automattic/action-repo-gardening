@@ -12,6 +12,7 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Detect Renovate PRs created by self-hosted renovate.
 - Fusion comment bot: update wording to avoid confusion.
+- Reorder JS imports for `import/order` eslint rule.
 - Updated package dependencies.
 - Use the node16 runner instead of the deprecated node12 runner.
 
