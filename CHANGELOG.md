@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Detect Renovate PRs created by self-hosted renovate.
 - Fusion comment bot: update wording to avoid confusion.
 - Renaming master references to trunk in GH action files, to work with the GitHub default branch name changing to trunk.
+- Renaming `master` references to `trunk`
 - Reorder JS imports for `import/order` eslint rule.
 - Updated package dependencies.
 - Use the node16 runner instead of the deprecated node12 runner.
