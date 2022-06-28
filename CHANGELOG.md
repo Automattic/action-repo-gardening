@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Automatically add a Priority label based off the contents of an issue
+
 ### Changed
 - Detect Renovate PRs created by self-hosted renovate.
 - Fusion comment bot: update wording to avoid confusion.
