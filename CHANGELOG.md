@@ -20,6 +20,7 @@ This is an alpha version! The changes listed here are not final.
 - Reorder JS imports for `import/order` eslint rule.
 - Updated package dependencies.
 - Use the node16 runner instead of the deprecated node12 runner.
+- WordPress.com Commit reminder: clarify wording of the message to help contributors.
 
 ### Fixed
 - Milestone management: avoid throwing an error when a valid milestone cannot be found. Abort task instead.
