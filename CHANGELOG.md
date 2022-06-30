@@ -18,6 +18,7 @@ This is an alpha version! The changes listed here are not final.
 - Renaming master references to trunk in GH action files, to work with the GitHub default branch name changing to trunk.
 - Renaming `master` references to `trunk`
 - Reorder JS imports for `import/order` eslint rule.
+- Triage: update priority logic to follow issue priority matrix.
 - Updated package dependencies.
 - Use the node16 runner instead of the deprecated node12 runner.
 - WordPress.com Commit reminder: clarify wording of the message to help contributors.
