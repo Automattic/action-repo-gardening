@@ -7440,12 +7440,12 @@ function regExpEscape (s) {
 
 /***/ }),
 
-/***/ 3048:
+/***/ 7835:
 /***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
 
 /* module decorator */ module = __nccwpck_require__.nmd(module);
 //! moment.js
-//! version : 2.29.2
+//! version : 2.29.4
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -9899,7 +9899,7 @@ function regExpEscape (s) {
     function preprocessRFC2822(s) {
         // Remove comments and folding whitespace and replace multiple-spaces with a single space
         return s
-            .replace(/\([^)]*\)|[\n\t]/g, ' ')
+            .replace(/\([^()]*\)|[\n\t]/g, ' ')
             .replace(/(\s\s+)/g, ' ')
             .replace(/^\s\s*/, '')
             .replace(/\s\s*$/, '');
@@ -13080,7 +13080,7 @@ function regExpEscape (s) {
 
     //! moment.js
 
-    hooks.version = '2.29.2';
+    hooks.version = '2.29.4';
 
     setHookCallback(createLocal);
 
@@ -17639,7 +17639,7 @@ module.exports = getLabels;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const compareVersions = __nccwpck_require__( 3314 );
-const moment = __nccwpck_require__( 3048 );
+const moment = __nccwpck_require__( 7835 );
 
 /* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
 
@@ -18305,7 +18305,7 @@ module.exports = assignIssues;
 
 const fs = __nccwpck_require__( 5747 );
 const path = __nccwpck_require__( 5622 );
-const moment = __nccwpck_require__( 3048 );
+const moment = __nccwpck_require__( 7835 );
 const debug = __nccwpck_require__( 5585 );
 const getAffectedChangeloggerProjects = __nccwpck_require__( 679 );
 const getFiles = __nccwpck_require__( 8083 );
