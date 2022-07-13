@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Automated triaging: add Platform label to new issues based on info provided in issue.
+
 ### Changed
 - Updated package dependencies.
+
+### Fixed
+- Ensure multiple plugins can be provided and then added as labels
 
 ## [3.0.0] - 2022-07-06
 ### Added
