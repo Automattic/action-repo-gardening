@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This is an alpha version! The changes listed here are not final.
 
 ### Added
+- Add new task to gather support references in a separate comment.
 - Automated triaging: add Platform label to new issues based on info provided in issue.
 
 ### Changed

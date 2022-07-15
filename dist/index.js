@@ -17529,6 +17529,54 @@ module.exports = getAssociatedPullRequest;
 
 /***/ }),
 
+/***/ 2101:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+const debug = __nccwpck_require__( 5585 );
+
+// Cache for getComments.
+const cache = {};
+
+/**
+ * Get all comments belonging to an issue.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<Array>} Promise resolving to an array of all comments on that given issue.
+ */
+async function getComments( octokit, owner, repo, number ) {
+	const issueComments = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-comments: Returning list of all comments on ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-comments: Get list of all comments on ${ cacheKey }.` );
+
+	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
+		owner,
+		repo,
+		issue_number: +number,
+		per_page: 100,
+	} ) ) {
+		response.data.map( comment => {
+			issueComments.push( comment );
+		} );
+	}
+
+	cache[ cacheKey ] = issueComments;
+	return issueComments;
+}
+
+module.exports = getComments;
+
+
+/***/ }),
+
 /***/ 8083:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -18301,6 +18349,7 @@ const path = __nccwpck_require__( 5622 );
 const moment = __nccwpck_require__( 7835 );
 const debug = __nccwpck_require__( 5585 );
 const getAffectedChangeloggerProjects = __nccwpck_require__( 679 );
+const getComments = __nccwpck_require__( 2101 );
 const getFiles = __nccwpck_require__( 8083 );
 const getLabels = __nccwpck_require__( 9172 );
 const getNextValidMilestone = __nccwpck_require__( 9432 );
@@ -18471,20 +18520,15 @@ async function getCheckComment( octokit, owner, repo, number ) {
 
 	debug( `check-description: Looking for a previous comment from this task in our PR.` );
 
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
-		owner,
-		repo,
-		issue_number: +number,
-	} ) ) {
-		response.data.map( comment => {
-			if (
-				comment.user.login === 'github-actions[bot]' &&
-				comment.body.includes( '**Thank you for your PR!**' )
-			) {
-				commentID = comment.id;
-			}
-		} );
-	}
+	const comments = await getComments( octokit, owner, repo, number );
+	comments.map( comment => {
+		if (
+			comment.user.login === 'github-actions[bot]' &&
+			comment.body.includes( '**Thank you for your PR!**' )
+		) {
+			commentID = comment.id;
+		}
+	} );
 
 	return commentID;
 }
@@ -18965,6 +19009,194 @@ module.exports = flagOss;
 
 /***/ }),
 
+/***/ 4851:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const debug = __nccwpck_require__( 5585 );
+const getComments = __nccwpck_require__( 2101 );
+
+/* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Search for a previous comment from this task in our issue.
+ *
+ * @param {Array} issueComments - Array of all comments on that issue.
+ * @returns {Promise<Object>} Promise resolving to an object of information about our comment.
+ */
+async function getListComment( issueComments ) {
+	let commentInfo = {};
+
+	debug( `gather-support-references: Looking for a previous comment from this task in our issue.` );
+
+	issueComments.map( comment => {
+		if (
+			comment.user.login === 'github-actions[bot]' &&
+			comment.body.includes( '**Support References**' )
+		) {
+			commentInfo = {
+				id: comment.id,
+				body: comment.body,
+			};
+		}
+	} );
+
+	return commentInfo;
+}
+
+/**
+ * Scan the contents of the issue as well as all its comments, get all support references, and add them to an array of references.
+ *
+ * @param {GitHub} octokit      - Initialized Octokit REST client.
+ * @param {string} owner        - Repository owner.
+ * @param {string} repo         - Repository name.
+ * @param {string} number       - Issue number.
+ * @param {Array} issueComments - Array of all comments on that issue.
+ * @returns {Promise<Array>} Promise resolving to an array.
+ */
+async function getIssueReferences( octokit, owner, repo, number, issueComments ) {
+	const ticketReferences = [];
+	const referencesRegexP = /[0-9]*-(?:chat|hc|zen|zd)/gim;
+
+	debug( `gather-support-references: Getting references from issue body.` );
+	const {
+		data: { body },
+	} = await octokit.rest.issues.get( {
+		owner: owner.login,
+		repo,
+		issue_number: +number,
+	} );
+	ticketReferences.push( ...body.matchAll( referencesRegexP ) );
+
+	debug( `gather-support-references: Getting references from comments.` );
+	issueComments.map( comment => {
+		if (
+			comment.user.login !== 'github-actions[bot]' ||
+			! comment.body.includes( '**Support References**' )
+		) {
+			ticketReferences.push( ...comment.body.matchAll( referencesRegexP ) );
+		}
+	} );
+
+	// Let's build a array with unique and correct support IDs, formatted properly.
+	const correctedSupportIds = new Set();
+	ticketReferences.map( reference => {
+		const supportId = reference[ 0 ];
+
+		// xxx-zen and xxx-hc are the preferred formats for tickets and chats.
+		// xxx-zd and xxx-chat, as well as uppercase versions, are considered as alternate versions.
+		const wrongId = supportId.match( /([0-9]*)-(zd|chat)/i );
+		if ( wrongId ) {
+			const correctedId = `${ wrongId[ 1 ] }-${
+				wrongId[ 2 ].toLowerCase() === 'zd' ? 'zen' : 'hc'
+			}`;
+			correctedSupportIds.add( correctedId );
+		} else {
+			correctedSupportIds.add( supportId.toLowerCase() );
+		}
+	} );
+
+	return [ ...correctedSupportIds ];
+}
+
+/**
+ * Build a comment body with a to-do list of all support references on that issue.
+ *
+ * @param {Array} issueReferences - Array of support references.
+ * @param {Set}   checkedRefs     - Set of support references already checked.
+ * @returns {string} Comment body.
+ */
+function buildCommentBody( issueReferences, checkedRefs = new Set() ) {
+	const commentBody = `**Support References**
+${ issueReferences
+	.map(
+		reference => `
+- [${ checkedRefs.has( reference ) ? 'x' : ' ' }] ${ reference }`
+	)
+	.join( '' ) }
+`;
+
+	return commentBody;
+}
+
+/**
+ * Creates or updates a comment on issue.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {GitHub} octokit              - Initialized Octokit REST client.
+ * @param {Array} issueReferences       - Array of support references.
+ * @param {Array} issueComments         - Array of all comments on that issue.
+ */
+async function createOrUpdateComment( payload, octokit, issueReferences, issueComments ) {
+	const { issue, repository } = payload;
+	const { number } = issue;
+	const { name: repo, owner } = repository;
+	const ownerLogin = owner.login;
+
+	const existingComment = await getListComment( issueComments );
+
+	// If there is a comment already, update it.
+	if ( existingComment.id && existingComment.body ) {
+		debug(
+			`gather-support-references: update comment ID ${ existingComment.id } with our new list of references.`
+		);
+
+		// First, build a list of all references and whether they are checked or not.
+		const listWithStatusMatch = existingComment.body.matchAll( /^-\s\[x\]\s(\S+)/gm );
+
+		// Extract the checked ticket references.
+		const checkedRefs = new Set();
+		for ( const referenceStatus of listWithStatusMatch ) {
+			checkedRefs.add( referenceStatus[ 1 ] );
+		}
+
+		// Build our comment body, with first the checked references, then the unchecked references.
+		const updatedComment = buildCommentBody( issueReferences, checkedRefs );
+
+		await octokit.rest.issues.updateComment( {
+			owner: ownerLogin,
+			repo,
+			body: updatedComment,
+			comment_id: +existingComment.id,
+		} );
+	} else {
+		// If no comment was published before, publish one now.
+		debug( `gather-support-references: Posting comment to issue #${ number }` );
+
+		const comment = buildCommentBody( issueReferences );
+
+		await octokit.rest.issues.createComment( {
+			owner: ownerLogin,
+			repo,
+			body: comment,
+			issue_number: +number,
+		} );
+	}
+}
+
+/**
+ * Post or update a comment with a to-do list of all support references on that issue.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue or issue comment event payload.
+ * @param {GitHub}              octokit - Initialized Octokit REST client.
+ */
+async function gatherSupportReferences( payload, octokit ) {
+	const { issue, repository } = payload;
+	const { number } = issue;
+	const { name: repo, owner } = repository;
+
+	const issueComments = await getComments( octokit, owner.login, repo, number );
+	const issueReferences = await getIssueReferences( octokit, owner, repo, number, issueComments );
+	if ( issueReferences.length > 0 ) {
+		debug( `gather-support-references: Found ${ issueReferences.length } references.` );
+		await createOrUpdateComment( payload, octokit, issueReferences, issueComments );
+	}
+}
+
+module.exports = gatherSupportReferences;
+
+
+/***/ }),
+
 /***/ 30:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -19401,6 +19633,7 @@ module.exports = triageNewIssues;
 
 const debug = __nccwpck_require__( 5585 );
 const getAssociatedPullRequest = __nccwpck_require__( 6957 );
+const getComments = __nccwpck_require__( 2101 );
 
 /* global GitHub, WebhookPayloadPush */
 
@@ -19419,20 +19652,15 @@ async function getMatticBotComment( octokit, owner, repo, number ) {
 
 	debug( `wpcom-commit-reminder: Looking for a comment from Matticbot on this PR.` );
 
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
-		owner: owner.login,
-		repo,
-		issue_number: +number,
-	} ) ) {
-		response.data.map( comment => {
-			if (
-				comment.user.login === 'matticbot' &&
-				comment.body.includes( 'This PR has changes that must be merged to WordPress.com' )
-			) {
-				commentBody = comment.body;
-			}
-		} );
-	}
+	const comments = await getComments( octokit, owner.login, repo, number );
+	comments.map( comment => {
+		if (
+			comment.user.login === 'matticbot' &&
+			comment.body.includes( 'This PR has changes that must be merged to WordPress.com' )
+		) {
+			commentBody = comment.body;
+		}
+	} );
 
 	return commentBody;
 }
@@ -19449,20 +19677,15 @@ async function getMatticBotComment( octokit, owner, repo, number ) {
 async function hasReminderComment( octokit, owner, repo, number ) {
 	debug( `wpcom-commit-reminder: Looking for a previous comment from this task in our PR.` );
 
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
-		owner: owner.login,
-		repo,
-		issue_number: +number,
-	} ) ) {
-		response.data.map( comment => {
-			if (
-				comment.user.login === 'github-actions[bot]' &&
-				comment.body.includes( 'Great news! One last step' )
-			) {
-				return true;
-			}
-		} );
-	}
+	const comments = await getComments( octokit, owner.login, repo, number );
+	comments.map( comment => {
+		if (
+			comment.user.login === 'github-actions[bot]' &&
+			comment.body.includes( 'Great news! One last step' )
+		) {
+			return true;
+		}
+	} );
 
 	return false;
 }
@@ -19718,6 +19941,7 @@ const assignIssues = __nccwpck_require__( 6676 );
 const checkDescription = __nccwpck_require__( 7366 );
 const cleanLabels = __nccwpck_require__( 8723 );
 const flagOss = __nccwpck_require__( 8535 );
+const gatherSupportReferences = __nccwpck_require__( 4851 );
 const notifyDesign = __nccwpck_require__( 30 );
 const notifyEditorial = __nccwpck_require__( 7688 );
 const triageNewIssues = __nccwpck_require__( 4954 );
@@ -19772,6 +19996,16 @@ const automations = [
 		event: 'issues',
 		action: [ 'opened', 'reopened' ],
 		task: triageNewIssues,
+	},
+	{
+		event: 'issues',
+		action: [ 'opened', 'reopened', 'edited' ],
+		task: gatherSupportReferences,
+	},
+	{
+		event: 'issue_comment',
+		action: [ 'created' ],
+		task: gatherSupportReferences,
 	},
 ];
 
