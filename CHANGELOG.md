@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 - Automated triaging: add Platform label to new issues based on info provided in issue.
 
 ### Changed
+- Gather support references: add clarification that the comment is automated and should not be edited.
 - Gather support references: stop gathering Live Chat references.
 - Updated package dependencies.
 
