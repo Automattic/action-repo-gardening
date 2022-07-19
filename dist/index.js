@@ -17415,547 +17415,11 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 5585:
-/***/ ((module) => {
-
-/**
- * Prints a debug message to STDOUT in non-testing environments.
- *
- * @param {string} message - The message to print.
- */
-function debug( message ) {
-	if ( process.env.NODE_ENV !== 'test' ) {
-		process.stdout.write( message + '\n' );
-	}
-}
-
-module.exports = debug;
-
-
-/***/ }),
-
-/***/ 679:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__( 5747 );
-const glob = __nccwpck_require__( 8111 );
-const getPrWorkspace = __nccwpck_require__( 6125 );
-
-/**
- * Returns a list of Projects that use changelogger package
- *
- * @returns {Array} list of changelogger packages
- */
-function getChangeloggerProjects() {
-	const projects = [];
-	const composerFiles = glob.sync( getPrWorkspace() + '/projects/*/*/composer.json' );
-	composerFiles.forEach( file => {
-		const json = JSON.parse( fs.readFileSync( file ) );
-		if (
-			// include changelogger package and any other packages that use changelogger package.
-			file.endsWith( '/projects/packages/changelogger/composer.json' ) ||
-			json.require[ 'automattic/jetpack-changelogger' ] ||
-			json[ 'require-dev' ][ 'automattic/jetpack-changelogger' ]
-		) {
-			projects.push( getProject( file ).fullName );
-		}
-	} );
-
-	return projects;
-}
-
-/**
- * Returns an object with project type and name
- *
- * @param {string} file - File path
- * @returns {object} Project type and name
- */
-function getProject( file ) {
-	const project = file.match( /projects\/(?<ptype>[^/]*)\/(?<pname>[^/]*)\// );
-	if ( project && project.groups.ptype && project.groups.pname ) {
-		return {
-			type: project.groups.ptype,
-			name: project.groups.pname,
-			fullName: `${ project.groups.ptype }/${ project.groups.pname }`,
-		};
-	}
-	return {};
-}
-
-/**
- * Returns a list of affected projects
- *
- * @param {Array} files - List of files
- * @returns {Array} List of affected projects
- */
-function getAffectedChangeloggerProjects( files ) {
-	const changeloggerProjects = getChangeloggerProjects();
-	const projects = files.reduce( ( acc, file ) => {
-		const project = getProject( file ).fullName;
-		if ( ! file.endsWith( 'CHANGELOG.md' ) && changeloggerProjects.includes( project ) ) {
-			acc.add( project );
-		}
-		return acc;
-	}, new Set() );
-
-	return [ ...projects ];
-}
-
-module.exports = getAffectedChangeloggerProjects;
-
-
-/***/ }),
-
-/***/ 6957:
-/***/ ((module) => {
-
-/* global WebhookPayloadPushCommit */
-
-/**
- * Given a commit object, returns a promise resolving with the pull request
- * number associated with the commit, or null if an associated pull request
- * cannot be determined.
- *
- * @param {WebhookPayloadPushCommit} commit - Commit object.
- * @returns {number?} Pull request number, or null if it cannot be determined.
- */
-function getAssociatedPullRequest( commit ) {
-	const match = commit.message.match( /\(#(\d+)\)$/m );
-	return match && Number( match[ 1 ] );
-}
-
-module.exports = getAssociatedPullRequest;
-
-
-/***/ }),
-
-/***/ 2101:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/* global GitHub */
-const debug = __nccwpck_require__( 5585 );
-
-// Cache for getComments.
-const cache = {};
-
-/**
- * Get all comments belonging to an issue.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<Array>} Promise resolving to an array of all comments on that given issue.
- */
-async function getComments( octokit, owner, repo, number ) {
-	const issueComments = [];
-	const cacheKey = `${ owner }/${ repo } #${ number }`;
-	if ( cache[ cacheKey ] ) {
-		debug( `get-comments: Returning list of all comments on ${ cacheKey } from cache.` );
-		return cache[ cacheKey ];
-	}
-
-	debug( `get-comments: Get list of all comments on ${ cacheKey }.` );
-
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
-		owner,
-		repo,
-		issue_number: +number,
-		per_page: 100,
-	} ) ) {
-		response.data.map( comment => {
-			issueComments.push( comment );
-		} );
-	}
-
-	cache[ cacheKey ] = issueComments;
-	return issueComments;
-}
-
-module.exports = getComments;
-
-
-/***/ }),
-
-/***/ 8083:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/* global GitHub */
-const debug = __nccwpck_require__( 5585 );
-
-// Cache for getFiles.
-const cache = {};
-
-/**
- * Get list of files modified in PR.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @returns {Promise<Array>} Promise resolving to an array of all files modified in  that PR.
- */
-async function getFiles( octokit, owner, repo, number ) {
-	const fileList = [];
-	const cacheKey = `${ owner }/${ repo } #${ number }`;
-	if ( cache[ cacheKey ] ) {
-		debug( `get-files: Returning list of files modified ${ cacheKey } from cache.` );
-		return cache[ cacheKey ];
-	}
-
-	debug( `get-files: Get list of files modified in ${ cacheKey }.` );
-
-	for await ( const response of octokit.paginate.iterator( octokit.rest.pulls.listFiles, {
-		owner,
-		repo,
-		pull_number: +number,
-		per_page: 100,
-	} ) ) {
-		response.data.map( file => {
-			fileList.push( file.filename );
-			if ( file.previous_filename ) {
-				fileList.push( file.previous_filename );
-			}
-		} );
-	}
-
-	cache[ cacheKey ] = fileList;
-	return fileList;
-}
-
-module.exports = getFiles;
-
-
-/***/ }),
-
-/***/ 9172:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/* global GitHub */
-const debug = __nccwpck_require__( 5585 );
-
-// Cache for getLabels.
-const cache = {};
-
-/**
- * Get labels on a PR.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @returns {Promise<Array>} Promise resolving to an array of all labels for that PR.
- */
-async function getLabels( octokit, owner, repo, number ) {
-	const labelList = [];
-	const cacheKey = `${ owner }/${ repo } #${ number }`;
-	if ( cache[ cacheKey ] ) {
-		debug( `get-labels: Returning list of lables on ${ cacheKey } from cache.` );
-		return cache[ cacheKey ];
-	}
-
-	debug( `get-labels: Get list of labels on ${ cacheKey }.` );
-
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listLabelsOnIssue, {
-		owner,
-		repo,
-		issue_number: +number,
-		per_page: 100,
-	} ) ) {
-		response.data.map( label => {
-			labelList.push( label.name );
-		} );
-	}
-
-	cache[ cacheKey ] = labelList;
-	return labelList;
-}
-
-module.exports = getLabels;
-
-
-/***/ }),
-
-/***/ 9432:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const compareVersions = __nccwpck_require__( 3314 );
-const moment = __nccwpck_require__( 7835 );
-
-/* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
-
-// Cache for getOpenMilestones.
-const cache = {};
-
-/**
- * Fetch all open milestones.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @returns {Promise<Array>} Promise resolving to an array of all open milestones.
- */
-async function getOpenMilestones( octokit, owner, repo ) {
-	const milestones = [];
-	const cacheKey = `${ owner }/${ repo }`;
-	if ( cache[ cacheKey ] ) {
-		return cache[ cacheKey ];
-	}
-
-	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listMilestones, {
-		owner,
-		repo,
-		state: 'open',
-		sort: 'due_on',
-		direction: 'asc',
-		per_page: 100,
-	} ) ) {
-		for ( const milestone of response.data ) {
-			milestones.push( milestone );
-		}
-	}
-
-	cache[ cacheKey ] = milestones;
-	return milestones;
-}
-
-/**
- * Returns a promise resolving to the next valid milestone, if exists.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} plugin  - Plugin slug.
- * @returns {Promise<OktokitIssuesListMilestonesForRepoResponseItem|void>} Promise resolving to milestone, if exists.
- */
-async function getNextValidMilestone( octokit, owner, repo, plugin = 'jetpack' ) {
-	// Find all valid milestones for the specified plugin.
-	const reg = new RegExp( '^' + plugin + '\\/\\d+\\.\\d' );
-	const milestones = ( await getOpenMilestones( octokit, owner, repo ) )
-		.filter( m => m.title.match( reg ) )
-		.sort( ( m1, m2 ) =>
-			compareVersions( m1.title.split( '/' )[ 1 ], m2.title.split( '/' )[ 1 ] )
-		);
-
-	// Return the first milestone with a future due date,
-	// or failing that the first milestone with no due date.
-	return (
-		milestones.find( milestone => milestone.due_on && moment( milestone.due_on ) > moment() ) ||
-		milestones.find( milestone => ! milestone.due_on )
-	);
-}
-
-module.exports = getNextValidMilestone;
-
-
-/***/ }),
-
-/***/ 7313:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-/* global GitHub */
-
-const getLabels = __nccwpck_require__( 9172 );
-
-/**
- * Get the name of the plugin concerned by this PR.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR / Issue number.
- * @returns {Promise<Array>} Promise resolving to an array of all the plugins touched by that PR.
- */
-async function getPluginNames( octokit, owner, repo, number ) {
-	const plugins = [];
-	const labels = await getLabels( octokit, owner, repo, number );
-	labels.map( label => {
-		const plugin = label.match( /^\[Plugin\]\s(?<pluginName>[^/]*)$/ );
-		if ( plugin && plugin.groups.pluginName ) {
-			plugins.push( plugin.groups.pluginName.replace( /\s+/, '-' ).toLowerCase() );
-		}
-	} );
-
-	return plugins;
-}
-
-module.exports = getPluginNames;
-
-
-/***/ }),
-
-/***/ 6125:
-/***/ ((module) => {
-
-/**
- * Get the path to the PR workspace.
- *
- * @returns {string} Path.
- */
-function getPrWorkspace() {
-	if ( 'undefined' !== typeof process.env.PR_WORKSPACE ) {
-		return process.env.PR_WORKSPACE;
-	}
-
-	throw new Error( 'Environment variable PR_WORKSPACE is not defined.' );
-}
-
-module.exports = getPrWorkspace;
-
-
-/***/ }),
-
-/***/ 6210:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const debug = __nccwpck_require__( 5585 );
-
-/* global WPAutomationTask */
-
-/**
- * Higher-order function which executes and returns the result of the given
- * handler only if the PR is not currently closed.
- *
- * @param {WPAutomationTask} handler - Original task.
- * @returns {WPAutomationTask} Enhanced task.
- */
-function ifNotClosed( handler ) {
-	const newHandler = ( payload, octokit ) => {
-		if ( payload.pull_request.state !== 'closed' ) {
-			return handler( payload, octokit );
-		}
-		debug( `main: Skipping ${ handler.name } because the PR is closed.` );
-	};
-	Object.defineProperty( newHandler, 'name', { value: handler.name } );
-	return newHandler;
-}
-
-module.exports = ifNotClosed;
-
-
-/***/ }),
-
-/***/ 1034:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const debug = __nccwpck_require__( 5585 );
-
-/* global WPAutomationTask */
-
-/**
- * Higher-order function which executes and returns the result of the given
- * handler only if the enhanced function is called with a payload indicating a
- * pull request event which did not originate from a forked repository.
- *
- * @param {WPAutomationTask} handler - Original task.
- * @returns {WPAutomationTask} Enhanced task.
- */
-function ifNotFork( handler ) {
-	const newHandler = ( payload, octokit ) => {
-		if ( payload.pull_request.head.repo.full_name === payload.pull_request.base.repo.full_name ) {
-			return handler( payload, octokit );
-		}
-		debug( `main: Skipping ${ handler.name } because we are in a fork.` );
-	};
-	Object.defineProperty( newHandler, 'name', { value: handler.name } );
-	return newHandler;
-}
-
-module.exports = ifNotFork;
-
-
-/***/ }),
-
-/***/ 3350:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fetch = __nccwpck_require__( 5660 );
-
-/* global WebhookPayloadPullRequest */
-
-/**
- * Send a message to a Slack channel using the Slack API.
- *
- * @param {string}                    message - Message to post to Slack
- * @param {string}                    channel - Slack channel ID.
- * @param {string}                    token   - Slack token.
- * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
- * @returns {Promise<boolean>} Promise resolving to a boolean, whether message was successfully posted or not.
- */
-async function sendSlackMessage( message, channel, token, payload ) {
-	const { pull_request, repository } = payload;
-	const { html_url, title, user } = pull_request;
-
-	const slackMessage = {
-		channel,
-		blocks: [
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
-					text: `${ message }`,
-				},
-			},
-			{
-				type: 'divider',
-			},
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
-					text: `PR created by ${ user.login } in the <${ repository.html_url }|${ repository.full_name }> repo.`,
-				},
-			},
-			{
-				type: 'divider',
-			},
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
-					text: `<${ html_url }|${ title }>`,
-				},
-				accessory: {
-					type: 'button',
-					text: {
-						type: 'plain_text',
-						text: 'Review',
-						emoji: true,
-					},
-					value: 'click_review',
-					url: `${ html_url }`,
-					action_id: 'button-action',
-				},
-			},
-		],
-		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
-		mrkdwn: true, // Formatting of the fallback text.
-	};
-
-	const slackRequest = await fetch( 'https://slack.com/api/chat.postMessage', {
-		method: 'POST',
-		body: JSON.stringify( slackMessage ),
-		headers: {
-			'Content-Type': 'application/json; charset=utf-8',
-			'Content-Length': slackMessage.length,
-			Authorization: `Bearer ${ token }`,
-			Accept: 'application/json',
-		},
-	} );
-
-	return !! slackRequest.ok;
-}
-
-module.exports = sendSlackMessage;
-
-
-/***/ }),
-
 /***/ 4411:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getFiles = __nccwpck_require__( 8083 );
+const debug = __nccwpck_require__( 6760 );
+const getFiles = __nccwpck_require__( 2605 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18220,10 +17684,10 @@ module.exports = addLabels;
 /***/ 2961:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getAssociatedPullRequest = __nccwpck_require__( 6957 );
-const getNextValidMilestone = __nccwpck_require__( 9432 );
-const getPluginNames = __nccwpck_require__( 7313 );
+const debug = __nccwpck_require__( 6760 );
+const getAssociatedPullRequest = __nccwpck_require__( 336 );
+const getNextValidMilestone = __nccwpck_require__( 6632 );
+const getPluginNames = __nccwpck_require__( 3345 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18299,7 +17763,7 @@ module.exports = addMilestone;
 /***/ 6676:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
+const debug = __nccwpck_require__( 6760 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18347,14 +17811,14 @@ module.exports = assignIssues;
 const fs = __nccwpck_require__( 5747 );
 const path = __nccwpck_require__( 5622 );
 const moment = __nccwpck_require__( 7835 );
-const debug = __nccwpck_require__( 5585 );
-const getAffectedChangeloggerProjects = __nccwpck_require__( 679 );
-const getComments = __nccwpck_require__( 2101 );
-const getFiles = __nccwpck_require__( 8083 );
-const getLabels = __nccwpck_require__( 9172 );
-const getNextValidMilestone = __nccwpck_require__( 9432 );
-const getPluginNames = __nccwpck_require__( 7313 );
-const getPrWorkspace = __nccwpck_require__( 6125 );
+const debug = __nccwpck_require__( 6760 );
+const getAffectedChangeloggerProjects = __nccwpck_require__( 7561 );
+const getComments = __nccwpck_require__( 9381 );
+const getFiles = __nccwpck_require__( 2605 );
+const getLabels = __nccwpck_require__( 5722 );
+const getNextValidMilestone = __nccwpck_require__( 6632 );
+const getPluginNames = __nccwpck_require__( 3345 );
+const getPrWorkspace = __nccwpck_require__( 5399 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18880,8 +18344,8 @@ module.exports = checkDescription;
 /***/ 8723:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 9172 );
+const debug = __nccwpck_require__( 6760 );
+const getLabels = __nccwpck_require__( 5722 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -18955,8 +18419,8 @@ module.exports = cleanLabels;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-const debug = __nccwpck_require__( 5585 );
-const sendSlackMessage = __nccwpck_require__( 3350 );
+const debug = __nccwpck_require__( 6760 );
+const sendSlackMessage = __nccwpck_require__( 5853 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -19012,8 +18476,8 @@ module.exports = flagOss;
 /***/ 4851:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getComments = __nccwpck_require__( 2101 );
+const debug = __nccwpck_require__( 6760 );
+const getComments = __nccwpck_require__( 9381 );
 
 /* global GitHub, WebhookPayloadIssue */
 
@@ -19202,9 +18666,9 @@ module.exports = gatherSupportReferences;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 9172 );
-const sendSlackMessage = __nccwpck_require__( 3350 );
+const debug = __nccwpck_require__( 6760 );
+const getLabels = __nccwpck_require__( 5722 );
+const sendSlackMessage = __nccwpck_require__( 5853 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -19333,9 +18797,9 @@ module.exports = notifyDesign;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 6379 );
-const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 9172 );
-const sendSlackMessage = __nccwpck_require__( 3350 );
+const debug = __nccwpck_require__( 6760 );
+const getLabels = __nccwpck_require__( 5722 );
+const sendSlackMessage = __nccwpck_require__( 5853 );
 
 /* global GitHub, WebhookPayloadPullRequest */
 
@@ -19472,8 +18936,8 @@ module.exports = notifyEditorial;
 /***/ 4954:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getLabels = __nccwpck_require__( 9172 );
+const debug = __nccwpck_require__( 6760 );
+const getLabels = __nccwpck_require__( 5722 );
 
 /* global GitHub, WebhookPayloadIssue */
 
@@ -19632,9 +19096,9 @@ module.exports = triageNewIssues;
 /***/ 9830:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const debug = __nccwpck_require__( 5585 );
-const getAssociatedPullRequest = __nccwpck_require__( 6957 );
-const getComments = __nccwpck_require__( 2101 );
+const debug = __nccwpck_require__( 6760 );
+const getAssociatedPullRequest = __nccwpck_require__( 336 );
+const getComments = __nccwpck_require__( 9381 );
 
 /* global GitHub, WebhookPayloadPush */
 
@@ -19748,6 +19212,542 @@ Once you've done so, come back to this PR and add a comment with your SVN change
 }
 
 module.exports = wpcomCommitReminder;
+
+
+/***/ }),
+
+/***/ 6760:
+/***/ ((module) => {
+
+/**
+ * Prints a debug message to STDOUT in non-testing environments.
+ *
+ * @param {string} message - The message to print.
+ */
+function debug( message ) {
+	if ( process.env.NODE_ENV !== 'test' ) {
+		process.stdout.write( message + '\n' );
+	}
+}
+
+module.exports = debug;
+
+
+/***/ }),
+
+/***/ 7561:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const fs = __nccwpck_require__( 5747 );
+const glob = __nccwpck_require__( 8111 );
+const getPrWorkspace = __nccwpck_require__( 5399 );
+
+/**
+ * Returns a list of Projects that use changelogger package
+ *
+ * @returns {Array} list of changelogger packages
+ */
+function getChangeloggerProjects() {
+	const projects = [];
+	const composerFiles = glob.sync( getPrWorkspace() + '/projects/*/*/composer.json' );
+	composerFiles.forEach( file => {
+		const json = JSON.parse( fs.readFileSync( file ) );
+		if (
+			// include changelogger package and any other packages that use changelogger package.
+			file.endsWith( '/projects/packages/changelogger/composer.json' ) ||
+			json.require[ 'automattic/jetpack-changelogger' ] ||
+			json[ 'require-dev' ][ 'automattic/jetpack-changelogger' ]
+		) {
+			projects.push( getProject( file ).fullName );
+		}
+	} );
+
+	return projects;
+}
+
+/**
+ * Returns an object with project type and name
+ *
+ * @param {string} file - File path
+ * @returns {object} Project type and name
+ */
+function getProject( file ) {
+	const project = file.match( /projects\/(?<ptype>[^/]*)\/(?<pname>[^/]*)\// );
+	if ( project && project.groups.ptype && project.groups.pname ) {
+		return {
+			type: project.groups.ptype,
+			name: project.groups.pname,
+			fullName: `${ project.groups.ptype }/${ project.groups.pname }`,
+		};
+	}
+	return {};
+}
+
+/**
+ * Returns a list of affected projects
+ *
+ * @param {Array} files - List of files
+ * @returns {Array} List of affected projects
+ */
+function getAffectedChangeloggerProjects( files ) {
+	const changeloggerProjects = getChangeloggerProjects();
+	const projects = files.reduce( ( acc, file ) => {
+		const project = getProject( file ).fullName;
+		if ( ! file.endsWith( 'CHANGELOG.md' ) && changeloggerProjects.includes( project ) ) {
+			acc.add( project );
+		}
+		return acc;
+	}, new Set() );
+
+	return [ ...projects ];
+}
+
+module.exports = getAffectedChangeloggerProjects;
+
+
+/***/ }),
+
+/***/ 336:
+/***/ ((module) => {
+
+/* global WebhookPayloadPushCommit */
+
+/**
+ * Given a commit object, returns a promise resolving with the pull request
+ * number associated with the commit, or null if an associated pull request
+ * cannot be determined.
+ *
+ * @param {WebhookPayloadPushCommit} commit - Commit object.
+ * @returns {number?} Pull request number, or null if it cannot be determined.
+ */
+function getAssociatedPullRequest( commit ) {
+	const match = commit.message.match( /\(#(\d+)\)$/m );
+	return match && Number( match[ 1 ] );
+}
+
+module.exports = getAssociatedPullRequest;
+
+
+/***/ }),
+
+/***/ 9381:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+const debug = __nccwpck_require__( 6760 );
+
+// Cache for getComments.
+const cache = {};
+
+/**
+ * Get all comments belonging to an issue.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<Array>} Promise resolving to an array of all comments on that given issue.
+ */
+async function getComments( octokit, owner, repo, number ) {
+	const issueComments = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-comments: Returning list of all comments on ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-comments: Get list of all comments on ${ cacheKey }.` );
+
+	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listComments, {
+		owner,
+		repo,
+		issue_number: +number,
+		per_page: 100,
+	} ) ) {
+		response.data.map( comment => {
+			issueComments.push( comment );
+		} );
+	}
+
+	cache[ cacheKey ] = issueComments;
+	return issueComments;
+}
+
+module.exports = getComments;
+
+
+/***/ }),
+
+/***/ 2605:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+const debug = __nccwpck_require__( 6760 );
+
+// Cache for getFiles.
+const cache = {};
+
+/**
+ * Get list of files modified in PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR number.
+ * @returns {Promise<Array>} Promise resolving to an array of all files modified in  that PR.
+ */
+async function getFiles( octokit, owner, repo, number ) {
+	const fileList = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-files: Returning list of files modified ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-files: Get list of files modified in ${ cacheKey }.` );
+
+	for await ( const response of octokit.paginate.iterator( octokit.rest.pulls.listFiles, {
+		owner,
+		repo,
+		pull_number: +number,
+		per_page: 100,
+	} ) ) {
+		response.data.map( file => {
+			fileList.push( file.filename );
+			if ( file.previous_filename ) {
+				fileList.push( file.previous_filename );
+			}
+		} );
+	}
+
+	cache[ cacheKey ] = fileList;
+	return fileList;
+}
+
+module.exports = getFiles;
+
+
+/***/ }),
+
+/***/ 5722:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+const debug = __nccwpck_require__( 6760 );
+
+// Cache for getLabels.
+const cache = {};
+
+/**
+ * Get labels on a PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR number.
+ * @returns {Promise<Array>} Promise resolving to an array of all labels for that PR.
+ */
+async function getLabels( octokit, owner, repo, number ) {
+	const labelList = [];
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-labels: Returning list of lables on ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-labels: Get list of labels on ${ cacheKey }.` );
+
+	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listLabelsOnIssue, {
+		owner,
+		repo,
+		issue_number: +number,
+		per_page: 100,
+	} ) ) {
+		response.data.map( label => {
+			labelList.push( label.name );
+		} );
+	}
+
+	cache[ cacheKey ] = labelList;
+	return labelList;
+}
+
+module.exports = getLabels;
+
+
+/***/ }),
+
+/***/ 6632:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const compareVersions = __nccwpck_require__( 3314 );
+const moment = __nccwpck_require__( 7835 );
+
+/* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
+
+// Cache for getOpenMilestones.
+const cache = {};
+
+/**
+ * Fetch all open milestones.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @returns {Promise<Array>} Promise resolving to an array of all open milestones.
+ */
+async function getOpenMilestones( octokit, owner, repo ) {
+	const milestones = [];
+	const cacheKey = `${ owner }/${ repo }`;
+	if ( cache[ cacheKey ] ) {
+		return cache[ cacheKey ];
+	}
+
+	for await ( const response of octokit.paginate.iterator( octokit.rest.issues.listMilestones, {
+		owner,
+		repo,
+		state: 'open',
+		sort: 'due_on',
+		direction: 'asc',
+		per_page: 100,
+	} ) ) {
+		for ( const milestone of response.data ) {
+			milestones.push( milestone );
+		}
+	}
+
+	cache[ cacheKey ] = milestones;
+	return milestones;
+}
+
+/**
+ * Returns a promise resolving to the next valid milestone, if exists.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} plugin  - Plugin slug.
+ * @returns {Promise<OktokitIssuesListMilestonesForRepoResponseItem|void>} Promise resolving to milestone, if exists.
+ */
+async function getNextValidMilestone( octokit, owner, repo, plugin = 'jetpack' ) {
+	// Find all valid milestones for the specified plugin.
+	const reg = new RegExp( '^' + plugin + '\\/\\d+\\.\\d' );
+	const milestones = ( await getOpenMilestones( octokit, owner, repo ) )
+		.filter( m => m.title.match( reg ) )
+		.sort( ( m1, m2 ) =>
+			compareVersions( m1.title.split( '/' )[ 1 ], m2.title.split( '/' )[ 1 ] )
+		);
+
+	// Return the first milestone with a future due date,
+	// or failing that the first milestone with no due date.
+	return (
+		milestones.find( milestone => milestone.due_on && moment( milestone.due_on ) > moment() ) ||
+		milestones.find( milestone => ! milestone.due_on )
+	);
+}
+
+module.exports = getNextValidMilestone;
+
+
+/***/ }),
+
+/***/ 3345:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+
+const getLabels = __nccwpck_require__( 5722 );
+
+/**
+ * Get the name of the plugin concerned by this PR.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - PR / Issue number.
+ * @returns {Promise<Array>} Promise resolving to an array of all the plugins touched by that PR.
+ */
+async function getPluginNames( octokit, owner, repo, number ) {
+	const plugins = [];
+	const labels = await getLabels( octokit, owner, repo, number );
+	labels.map( label => {
+		const plugin = label.match( /^\[Plugin\]\s(?<pluginName>[^/]*)$/ );
+		if ( plugin && plugin.groups.pluginName ) {
+			plugins.push( plugin.groups.pluginName.replace( /\s+/, '-' ).toLowerCase() );
+		}
+	} );
+
+	return plugins;
+}
+
+module.exports = getPluginNames;
+
+
+/***/ }),
+
+/***/ 5399:
+/***/ ((module) => {
+
+/**
+ * Get the path to the PR workspace.
+ *
+ * @returns {string} Path.
+ */
+function getPrWorkspace() {
+	if ( 'undefined' !== typeof process.env.PR_WORKSPACE ) {
+		return process.env.PR_WORKSPACE;
+	}
+
+	throw new Error( 'Environment variable PR_WORKSPACE is not defined.' );
+}
+
+module.exports = getPrWorkspace;
+
+
+/***/ }),
+
+/***/ 6167:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const debug = __nccwpck_require__( 6760 );
+
+/* global WPAutomationTask */
+
+/**
+ * Higher-order function which executes and returns the result of the given
+ * handler only if the PR is not currently closed.
+ *
+ * @param {WPAutomationTask} handler - Original task.
+ * @returns {WPAutomationTask} Enhanced task.
+ */
+function ifNotClosed( handler ) {
+	const newHandler = ( payload, octokit ) => {
+		if ( payload.pull_request.state !== 'closed' ) {
+			return handler( payload, octokit );
+		}
+		debug( `main: Skipping ${ handler.name } because the PR is closed.` );
+	};
+	Object.defineProperty( newHandler, 'name', { value: handler.name } );
+	return newHandler;
+}
+
+module.exports = ifNotClosed;
+
+
+/***/ }),
+
+/***/ 9293:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const debug = __nccwpck_require__( 6760 );
+
+/* global WPAutomationTask */
+
+/**
+ * Higher-order function which executes and returns the result of the given
+ * handler only if the enhanced function is called with a payload indicating a
+ * pull request event which did not originate from a forked repository.
+ *
+ * @param {WPAutomationTask} handler - Original task.
+ * @returns {WPAutomationTask} Enhanced task.
+ */
+function ifNotFork( handler ) {
+	const newHandler = ( payload, octokit ) => {
+		if ( payload.pull_request.head.repo.full_name === payload.pull_request.base.repo.full_name ) {
+			return handler( payload, octokit );
+		}
+		debug( `main: Skipping ${ handler.name } because we are in a fork.` );
+	};
+	Object.defineProperty( newHandler, 'name', { value: handler.name } );
+	return newHandler;
+}
+
+module.exports = ifNotFork;
+
+
+/***/ }),
+
+/***/ 5853:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const fetch = __nccwpck_require__( 5660 );
+
+/* global WebhookPayloadPullRequest */
+
+/**
+ * Send a message to a Slack channel using the Slack API.
+ *
+ * @param {string}                    message - Message to post to Slack
+ * @param {string}                    channel - Slack channel ID.
+ * @param {string}                    token   - Slack token.
+ * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
+ * @returns {Promise<boolean>} Promise resolving to a boolean, whether message was successfully posted or not.
+ */
+async function sendSlackMessage( message, channel, token, payload ) {
+	const { pull_request, repository } = payload;
+	const { html_url, title, user } = pull_request;
+
+	const slackMessage = {
+		channel,
+		blocks: [
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: `${ message }`,
+				},
+			},
+			{
+				type: 'divider',
+			},
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: `PR created by ${ user.login } in the <${ repository.html_url }|${ repository.full_name }> repo.`,
+				},
+			},
+			{
+				type: 'divider',
+			},
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: `<${ html_url }|${ title }>`,
+				},
+				accessory: {
+					type: 'button',
+					text: {
+						type: 'plain_text',
+						text: 'Review',
+						emoji: true,
+					},
+					value: 'click_review',
+					url: `${ html_url }`,
+					action_id: 'button-action',
+				},
+			},
+		],
+		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
+		mrkdwn: true, // Formatting of the fallback text.
+	};
+
+	const slackRequest = await fetch( 'https://slack.com/api/chat.postMessage', {
+		method: 'POST',
+		body: JSON.stringify( slackMessage ),
+		headers: {
+			'Content-Type': 'application/json; charset=utf-8',
+			'Content-Length': slackMessage.length,
+			Authorization: `Bearer ${ token }`,
+			Accept: 'application/json',
+		},
+	} );
+
+	return !! slackRequest.ok;
+}
+
+module.exports = sendSlackMessage;
 
 
 /***/ }),
@@ -19933,9 +19933,6 @@ var __webpack_exports__ = {};
 (() => {
 const { setFailed, getInput } = __nccwpck_require__( 6379 );
 const { context, getOctokit } = __nccwpck_require__( 8025 );
-const debug = __nccwpck_require__( 5585 );
-const ifNotClosed = __nccwpck_require__( 6210 );
-const ifNotFork = __nccwpck_require__( 1034 );
 const addLabels = __nccwpck_require__( 4411 );
 const addMilestone = __nccwpck_require__( 2961 );
 const assignIssues = __nccwpck_require__( 6676 );
@@ -19947,6 +19944,9 @@ const notifyDesign = __nccwpck_require__( 30 );
 const notifyEditorial = __nccwpck_require__( 7688 );
 const triageNewIssues = __nccwpck_require__( 4954 );
 const wpcomCommitReminder = __nccwpck_require__( 9830 );
+const debug = __nccwpck_require__( 6760 );
+const ifNotClosed = __nccwpck_require__( 6167 );
+const ifNotFork = __nccwpck_require__( 9293 );
 
 const automations = [
 	{
