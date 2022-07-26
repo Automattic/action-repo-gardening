@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 - Labels: add [Status] In Progress label for draft PRs
 
 ### Changed
+- Documentation: update node version recommended in code sample
 - Gather support references: add clarification that the comment is automated and should not be edited.
 - Gather support references: stop gathering Live Chat references.
 - General: move all utilities into their own directory to keep things ordered
