@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Add new task to gather support references in a separate comment.
 - Automated triaging: add Platform label to new issues based on info provided in issue.
 - Labels: add [Status] In Progress label for draft PRs
+- New task: Reply to customers Reminder -- Sends a Slack message to remind triage teams to reply to customers once an issue has been closed.
 
 ### Changed
 - Documentation: update node version recommended in code sample
