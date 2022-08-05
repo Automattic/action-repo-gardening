@@ -12,6 +12,7 @@ This is an alpha version! The changes listed here are not final.
 ### Added
 - Add new task to gather support references in a separate comment.
 - Automated triaging: add Platform label to new issues based on info provided in issue.
+- Gather support references: add option to send a Slack message when issuees start gathering a lot of tickets, and would need to be escalated.
 - Labels: add [Status] In Progress label for draft PRs
 - New task: Reply to customers Reminder -- Sends a Slack message to remind triage teams to reply to customers once an issue has been closed.
 
