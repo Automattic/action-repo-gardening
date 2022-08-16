@@ -18622,6 +18622,8 @@ function formatSlackMessage( payload, channel, message ) {
 			dris = '@jpop-da';
 			break;
 		case 'Automattic/zero-bs-crm':
+		case 'Automattic/sensei':
+		case 'Automattic/WP-Job-Manager':
 			dris = '@heysatellite';
 			break;
 	}
@@ -19166,6 +19168,8 @@ function formatSlackMessage( payload, channel, message ) {
 			dris = '@jpop-da';
 			break;
 		case 'Automattic/zero-bs-crm':
+		case 'Automattic/sensei':
+		case 'Automattic/WP-Job-Manager':
 			dris = '@heysatellite';
 			break;
 	}
