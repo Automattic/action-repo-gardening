@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 - Gather support references: add option to send a Slack message when issuees start gathering a lot of tickets, and would need to be escalated.
 - Labels: add [Status] In Progress label for draft PRs
 - New task: Reply to customers Reminder -- Sends a Slack message to remind triage teams to reply to customers once an issue has been closed.
+- Tooling: enable automatic GitHub releases when a new version of the action is tagged, so the new version can be made available in the GitHub Actions marketplace.
 
 ### Changed
 - Documentation: update node version recommended in code sample
