@@ -22,6 +22,7 @@ This is an alpha version! The changes listed here are not final.
 - Gather Support References / Reply to Customers: ping the right DRIs for Satellite products.
 - Gather support references: add clarification that the comment is automated and should not be edited.
 - Gather support references: stop gathering Live Chat references.
+- General: disable Slack link and media previews in messages that are already custom-formatted.
 - General: move all utilities into their own directory to keep things ordered
 - Updated package dependencies.
 
