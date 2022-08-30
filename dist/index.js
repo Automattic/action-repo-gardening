@@ -19868,6 +19868,8 @@ function formatSlackMessage( payload, channel, message ) {
 		],
 		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
 		mrkdwn: true, // Formatting of the fallback text.
+		unfurl_links: false,
+		unfurl_media: false,
 	};
 }
 
@@ -20502,6 +20504,8 @@ function formatSlackMessage( payload, channel, message ) {
 		],
 		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
 		mrkdwn: true, // Formatting of the fallback text.
+		unfurl_links: false,
+		unfurl_media: false,
 	};
 }
 
@@ -21379,6 +21383,8 @@ async function sendSlackMessage( message, channel, token, payload, customMessage
 			],
 			text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
 			mrkdwn: true, // Formatting of the fallback text.
+			unfurl_links: false,
+			unfurl_media: false,
 		};
 	}
 
