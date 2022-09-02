@@ -30,6 +30,7 @@ This is an alpha version! The changes listed here are not final.
 ### Fixed
 - Ensure multiple plugins can be provided and then added as labels
 - Gather Support References: avoid sending reminders for closed issues.
+- Gather Support References: avoid throwing an error when an issue has no content.
 
 ## [3.0.0] - 2022-07-06
 ### Added
