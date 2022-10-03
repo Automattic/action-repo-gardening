@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Add new task to gather support references in a separate comment.
+- assignLabels: Add a '[Status] Needs Test Review' to PRs touching tests
 - Automated triaging: add Platform label to new issues based on info provided in issue.
 - Gather support references: add a specific label to an issue once it has gathered more than 10 issues.
 - Gather support references: add option to send a Slack message when issuees start gathering a lot of tickets, and would need to be escalated.
