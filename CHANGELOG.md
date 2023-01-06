@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Changed
+- Changed headings in the `PULL_REQUEST_TEMPLATE`
+
 ## [3.1.0] - 2022-11-01
 ### Added
 - Add new task to gather support references in a separate comment.
