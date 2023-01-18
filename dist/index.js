@@ -19715,7 +19715,7 @@ const sendSlackMessage = __nccwpck_require__( 5853 );
  * Search for a previous comment from this task in our issue.
  *
  * @param {Array} issueComments - Array of all comments on that issue.
- * @returns {Promise<Object>} Promise resolving to an object of information about our comment.
+ * @returns {Promise<object>} Promise resolving to an object of information about our comment.
  */
 async function getListComment( issueComments ) {
 	let commentInfo = {};
@@ -19834,7 +19834,7 @@ ${ issueReferences
  * @param {WebhookPayloadIssue} payload - Issue event payload.
  * @param {string}              channel - Slack channel ID.
  * @param {string}              message - Basic message (without the formatting).
- * @returns {Object} Object containing the slack message and its formatting.
+ * @returns {object} Object containing the slack message and its formatting.
  */
 function formatSlackMessage( payload, channel, message ) {
 	const { issue, repository } = payload;
@@ -20470,7 +20470,7 @@ async function hasManySupportReferences( issueComments ) {
  * @param {WebhookPayloadIssue} payload - Issue event payload.
  * @param {string}              channel - Slack channel ID.
  * @param {string}              message - Basic message (without the formatting).
- * @returns {Object} Object containing the slack message and its formatting.
+ * @returns {object} Object containing the slack message and its formatting.
  */
 function formatSlackMessage( payload, channel, message ) {
 	const { issue, repository } = payload;
@@ -21354,7 +21354,7 @@ const fetch = __nccwpck_require__( 5660 );
  * @param {string}                    channel             - Slack channel ID.
  * @param {string}                    token               - Slack token.
  * @param {WebhookPayloadPullRequest} payload             - Pull request event payload.
- * @param {Object}                    customMessageFormat - Custom message formatting. If defined, takes over from message completely.
+ * @param {object}                    customMessageFormat - Custom message formatting. If defined, takes over from message completely.
  * @returns {Promise<boolean>} Promise resolving to a boolean, whether message was successfully posted or not.
  */
 async function sendSlackMessage( message, channel, token, payload, customMessageFormat = {} ) {

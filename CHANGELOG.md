@@ -12,6 +12,9 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Changed headings in the `PULL_REQUEST_TEMPLATE`
 
+### Fixed
+- Clean up JavaScript eslint issues.
+
 ## [3.1.0] - 2022-11-01
 ### Added
 - Add new task to gather support references in a separate comment.
