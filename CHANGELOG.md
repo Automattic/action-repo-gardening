@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Changed headings in the `PULL_REQUEST_TEMPLATE`
+- Update triage task to match new bug report template format.
 
 ### Fixed
 - Clean up JavaScript eslint issues.
