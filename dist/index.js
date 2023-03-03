@@ -20409,6 +20409,193 @@ module.exports = notifyEditorial;
 
 /***/ }),
 
+/***/ 6464:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { getInput, setFailed } = __nccwpck_require__( 4363 );
+const debug = __nccwpck_require__( 4956 );
+const getLabels = __nccwpck_require__( 1985 );
+const sendSlackMessage = __nccwpck_require__( 4826 );
+
+/* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Check for a high priority label on an issue.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasHighPrioLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the [Pri] High label.
+	return labels.includes( '[Pri] High' );
+}
+
+/**
+ * Check for a BLOCKER priority label on an issue.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasBlockerPrioLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the [Pri] BLOCKER label.
+	return labels.includes( '[Pri] BLOCKER' );
+}
+
+/**
+ * Check for a Kitkat Input Requested label on an issue.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasKitkatSignalLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	// We're only interested in the Escalated to Kitkat label.
+	return labels.includes( '[Status] Escalated to Kitkat' );
+}
+
+/**
+ * Build an object containing the slack message and its formatting to send to Slack.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {string}              channel - Slack channel ID.
+ * @param {string}              message - Basic message (without the formatting).
+ * @returns {object} Object containing the slack message and its formatting.
+ */
+function formatSlackMessage( payload, channel, message ) {
+	const { issue } = payload;
+	const { html_url, title } = issue;
+
+	return {
+		channel,
+		blocks: [
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: message,
+				},
+			},
+			{
+				type: 'divider',
+			},
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: `@kitkat-team please mark this message as :done: once the issue has been triaged. Thank you!`,
+				},
+			},
+			{
+				type: 'divider',
+			},
+			{
+				type: 'section',
+				text: {
+					type: 'mrkdwn',
+					text: `<${ html_url }|${ title }>`,
+				},
+				accessory: {
+					type: 'button',
+					text: {
+						type: 'plain_text',
+						text: 'View',
+						emoji: true,
+					},
+					value: 'click_review',
+					url: `${ html_url }`,
+					action_id: 'button-action',
+				},
+			},
+		],
+		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
+		mrkdwn: true, // Formatting of the fallback text.
+		unfurl_links: false,
+		unfurl_media: false,
+	};
+}
+
+/**
+ * Send a Slack notification about a label to Team KitKat.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {GitHub}              octokit - Initialized Octokit REST client.
+ */
+async function notifyKitKat( payload, octokit ) {
+	const {
+		issue: { number },
+		repository,
+	} = payload;
+	const { owner, name: repo } = repository;
+	const ownerLogin = owner.login;
+
+	const slackToken = getInput( 'slack_token' );
+	if ( ! slackToken ) {
+		setFailed( 'notify-kitkat: Input slack_token is required but missing. Aborting.' );
+		return;
+	}
+
+	const channel = getInput( 'slack_kitkat_channel' );
+	if ( ! channel ) {
+		setFailed( 'notify-kitkat: Input slack_kitkat_channel is required but missing. Aborting.' );
+		return;
+	}
+
+	// Check if Kitkat input was already requested for that issue.
+	const hasBeenRequested = await hasKitkatSignalLabel( octokit, ownerLogin, repo, number );
+	if ( hasBeenRequested ) {
+		debug( `notify-kitkat: Kitkat input was already requested for issue #${ number }. Aborting.` );
+		return;
+	}
+
+	// Check for a [Pri] High label.
+	const isLabeledHighPriority = await hasHighPrioLabel( octokit, ownerLogin, repo, number );
+	if ( isLabeledHighPriority ) {
+		debug(
+			`notify-kitkat: Found a [Pri] High label on issue #${ number }. Sending in Slack message.`
+		);
+		const message = `:bug_police: New High priority bug! Please take a moment to triage this bug.`;
+		const slackMessageFormat = formatSlackMessage( payload, channel, message );
+		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
+	}
+
+	// Check for a BLOCKER priority label.
+	const isLabeledBlocker = await hasBlockerPrioLabel( octokit, ownerLogin, repo, number );
+	if ( isLabeledBlocker ) {
+		debug(
+			`notify-kitkat: Found a [Pri] BLOCKER label on issue #${ number }. Sending in Slack message.`
+		);
+		const message = `:bug_police: New Blocker bug!  Please take a moment to triage this bug.`;
+		const slackMessageFormat = formatSlackMessage( payload, channel, message );
+		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
+	}
+
+	if ( isLabeledHighPriority || isLabeledBlocker ) {
+		debug( `notify-kitkat: Adding a label to issue #${ number } to show that Kitkat was warned.` );
+		await octokit.rest.issues.addLabels( {
+			owner: ownerLogin,
+			repo,
+			issue_number: number,
+			labels: [ '[Status] Escalated to Kitkat' ],
+		} );
+	}
+}
+
+module.exports = notifyKitKat;
+
+
+/***/ }),
+
 /***/ 8097:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -21345,16 +21532,16 @@ module.exports = ifNotFork;
 
 const fetch = __nccwpck_require__( 4048 );
 
-/* global WebhookPayloadPullRequest */
+/* global WebhookPayloadPullRequest, WebhookPayloadIssue */
 
 /**
  * Send a message to a Slack channel using the Slack API.
  *
- * @param {string}                    message             - Message to post to Slack
- * @param {string}                    channel             - Slack channel ID.
- * @param {string}                    token               - Slack token.
- * @param {WebhookPayloadPullRequest} payload             - Pull request event payload.
- * @param {object}                    customMessageFormat - Custom message formatting. If defined, takes over from message completely.
+ * @param {string}                                        message             - Message to post to Slack
+ * @param {string}                                        channel             - Slack channel ID.
+ * @param {string}                                        token               - Slack token.
+ * @param {WebhookPayloadPullRequest|WebhookPayloadIssue} payload             - Pull request event payload.
+ * @param {object}                                        customMessageFormat - Custom message formatting. If defined, takes over from message completely.
  * @returns {Promise<boolean>} Promise resolving to a boolean, whether message was successfully posted or not.
  */
 async function sendSlackMessage( message, channel, token, payload, customMessageFormat = {} ) {
@@ -21364,8 +21551,8 @@ async function sendSlackMessage( message, channel, token, payload, customMessage
 	if ( Object.keys( customMessageFormat ).length > 0 ) {
 		slackMessage = customMessageFormat;
 	} else {
-		const { pull_request, repository } = payload;
-		const { html_url, title, user } = pull_request;
+		const { repository } = payload;
+		const { html_url, title, user } = payload?.pull_request ?? payload.issue;
 
 		slackMessage = {
 			channel,
@@ -21635,6 +21822,7 @@ const flagOss = __nccwpck_require__( 9025 );
 const gatherSupportReferences = __nccwpck_require__( 1673 );
 const notifyDesign = __nccwpck_require__( 6082 );
 const notifyEditorial = __nccwpck_require__( 6344 );
+const notifyKitKat = __nccwpck_require__( 6464 );
 const replyToCustomersReminder = __nccwpck_require__( 8097 );
 const triageNewIssues = __nccwpck_require__( 9254 );
 const wpcomCommitReminder = __nccwpck_require__( 4934 );
@@ -21677,6 +21865,11 @@ const automations = [
 		event: 'pull_request_target',
 		action: [ 'labeled' ],
 		task: ifNotClosed( notifyEditorial ),
+	},
+	{
+		event: 'issues',
+		action: [ 'labeled' ],
+		task: notifyKitKat,
 	},
 	{
 		event: 'push',
