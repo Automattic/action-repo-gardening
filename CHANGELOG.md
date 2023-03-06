@@ -15,6 +15,9 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Update auto-labeling rules for Boost features.
 
+### Fixed
+- Use correct emoji in Kitkat notifications
+
 ## [3.1.1] - 2023-02-07
 ### Changed
 - Changed headings in the `PULL_REQUEST_TEMPLATE`.
