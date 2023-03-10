@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Add new task to notify Quality team of important issues
 
 ### Changed
+- Changed the features directory to include the module directory as well.
 - Update auto-labeling rules for Boost features.
 
 ### Fixed
