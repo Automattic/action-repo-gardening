@@ -19001,7 +19001,8 @@ const debug = __nccwpck_require__( 4956 );
  * @param {GitHub}                    octokit - Initialized Octokit REST client.
  */
 async function assignIssues( payload, octokit ) {
-	const regex = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:#{1}|https?:\/\/github\.com\/automattic\/jetpack\/issues\/)(\d+)/gi;
+	const regex =
+		/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:#{1}|https?:\/\/github\.com\/automattic\/jetpack\/issues\/)(\d+)/gi;
 
 	let match;
 	while ( ( match = regex.exec( payload.pull_request.body ) ) ) {
@@ -20874,7 +20875,8 @@ function findPlatforms( body ) {
  */
 function findPriority( body ) {
 	// Look for priority indicators in body.
-	const priorityRegex = /###\sImpact\n\n(?<impact>.*)\n\n###\sAvailable\sworkarounds\?\n\n(?<blocking>.*)\n/gm;
+	const priorityRegex =
+		/###\sImpact\n\n(?<impact>.*)\n\n###\sAvailable\sworkarounds\?\n\n(?<blocking>.*)\n/gm;
 	let match;
 	while ( ( match = priorityRegex.exec( body ) ) ) {
 		const [ , impact = '', blocking = '' ] = match;
