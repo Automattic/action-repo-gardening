@@ -20497,28 +20497,7 @@ function formatSlackMessage( payload, channel, message ) {
 				type: 'section',
 				text: {
 					type: 'mrkdwn',
-					text: `@kitkat-team please mark this message as :done: once the issue has been triaged. Thank you!`,
-				},
-			},
-			{
-				type: 'divider',
-			},
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
 					text: `<${ html_url }|${ title }>`,
-				},
-				accessory: {
-					type: 'button',
-					text: {
-						type: 'plain_text',
-						text: 'View',
-						emoji: true,
-					},
-					value: 'click_review',
-					url: `${ html_url }`,
-					action_id: 'button-action',
 				},
 			},
 		],
@@ -20574,7 +20553,7 @@ async function notifyKitKat( payload, octokit ) {
 		debug(
 			`notify-kitkat: Found a [Pri] High label on issue #${ number }. Sending in Slack message.`
 		);
-		const message = `:bug-police: New High priority bug! Please take a moment to triage this bug.`;
+		const message = `New high priority bug! Please check the priority.`;
 		const slackMessageFormat = formatSlackMessage( payload, channel, message );
 		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
 	}
@@ -20585,7 +20564,7 @@ async function notifyKitKat( payload, octokit ) {
 		debug(
 			`notify-kitkat: Found a [Pri] BLOCKER label on issue #${ number }. Sending in Slack message.`
 		);
-		const message = `:bug-police: New Blocker bug!  Please take a moment to triage this bug.`;
+		const message = `New blocker bug!  Please check the priority.`;
 		const slackMessageFormat = formatSlackMessage( payload, channel, message );
 		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
 	}
