@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 - Changed the features directory to include the module directory as well.
 - Escalation task: update wording and icons.
 - Kitkat escalation task: change the name of the label applied to escalated issues.
+- Triage tasks: update wording of messages and start warning folks of issues that do get any Priority label added automatically, so they can triage manually.
 - Update auto-labeling rules for Boost features.
 
 ### Fixed
