@@ -20448,6 +20448,21 @@ async function hasKitkatSignalLabel( octokit, owner, repo, number ) {
 }
 
 /**
+ * Ensure the issue is a bug.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function isBug( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+
+	return labels.includes( '[Type] Bug' );
+}
+
+/**
  * Build an object containing the slack message and its formatting to send to Slack.
  *
  * @param {WebhookPayloadIssue} payload - Issue event payload.
@@ -20516,6 +20531,13 @@ async function notifyKitKat( payload, octokit ) {
 	// Only proceed if the issue is stil open.
 	if ( 'open' !== state ) {
 		debug( `notify-kitkat: Issue #${ number } is state '${ state }'. Aborting.` );
+		return;
+	}
+
+	// Only proceed if the issue is a confirmed bug.
+	const hasBugLabel = await isBug( octokit, ownerLogin, repo, number );
+	if ( ! hasBugLabel ) {
+		debug( `notify-kitkat: Issue #${ number } is not a bug. Aborting.` );
 		return;
 	}
 
@@ -20803,6 +20825,21 @@ async function hasPriorityLabels( octokit, owner, repo, number ) {
 }
 
 /**
+ * Ensure the issue is a bug.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function isBug( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+
+	return labels.includes( '[Type] Bug' );
+}
+
+/**
  * Find list of plugins impacted by issue, based off issue contents.
  *
  * @param {string} body - The issue content.
@@ -20973,6 +21010,16 @@ async function triageNewIssues( payload, octokit ) {
 			labels: [ `[Pri] ${ priority }` ],
 		} );
 	} else if ( priority === null && ! hasPriorityLabel ) {
+		const hasBugLabel = await isBug( octokit, ownerLogin, name, number );
+		// If the issue is not a confirmed bug
+		// we do not want to send a Slack notification.
+		if ( ! hasBugLabel ) {
+			debug(
+				`triage-new-issues: Issue #${ number } is not a bug. Not sending any Slack notification.`
+			);
+			return;
+		}
+
 		// No priority found, and no priority label.
 		// Let's notify the team so they can prioritize the issue appropriately.
 		// So far only enabled in the Calypso repo.
