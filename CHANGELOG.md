@@ -19,6 +19,7 @@ This is an alpha version! The changes listed here are not final.
 - Only send Slack notifications for bugs.
 - Triage tasks: update wording of messages and start warning folks of issues that do get any Priority label added automatically, so they can triage manually.
 - Update auto-labeling rules for Boost features.
+- Updated package dependencies.
 
 ### Fixed
 - Use correct emoji in Kitkat notifications
