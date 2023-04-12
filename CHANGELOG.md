@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Add the Docs label whenever markdown files are edited.
+- Automated labeling: standardize how we track PRs with tests.
 - Changed the features directory to include the module directory as well.
 - Escalation task: update wording and icons.
 - Kitkat escalation task: change the name of the label applied to escalated issues.
