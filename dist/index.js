@@ -18718,6 +18718,11 @@ function cleanName( name ) {
 		name = 'Defer JS';
 	}
 
+	// [Plugin] mu wpcom plugin is a bit too long.
+	if ( name === 'mu-wpcom-plugin' ) {
+		name = 'mu-wpcom';
+	}
+
 	return (
 		name
 			// Break up words
@@ -20412,203 +20417,6 @@ module.exports = notifyEditorial;
 
 /***/ }),
 
-/***/ 450:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { getInput, setFailed } = __nccwpck_require__( 4139 );
-const debug = __nccwpck_require__( 7197 );
-const getLabels = __nccwpck_require__( 6913 );
-const sendSlackMessage = __nccwpck_require__( 1852 );
-
-/* global GitHub, WebhookPayloadIssue */
-
-/**
- * Check for a high priority label on an issue.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasHighPrioLabel( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	// We're only interested in the [Pri] High label.
-	return labels.includes( '[Pri] High' );
-}
-
-/**
- * Check for a BLOCKER priority label on an issue.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasBlockerPrioLabel( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	// We're only interested in the [Pri] BLOCKER label.
-	return labels.includes( '[Pri] BLOCKER' );
-}
-
-/**
- * Check for a label showing that it was already escalated.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasKitkatSignalLabel( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-
-	// Does the list of labels includes the "[Status] Escalated" or "[Status] Escalated to Kitkat" label?
-	return (
-		labels.includes( '[Status] Escalated' ) || labels.includes( '[Status] Escalated to Kitkat' )
-	);
-}
-
-/**
- * Ensure the issue is a bug.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function isBug( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-
-	return labels.includes( '[Type] Bug' );
-}
-
-/**
- * Build an object containing the slack message and its formatting to send to Slack.
- *
- * @param {WebhookPayloadIssue} payload - Issue event payload.
- * @param {string}              channel - Slack channel ID.
- * @param {string}              message - Basic message (without the formatting).
- * @returns {object} Object containing the slack message and its formatting.
- */
-function formatSlackMessage( payload, channel, message ) {
-	const { issue } = payload;
-	const { html_url, title } = issue;
-
-	return {
-		channel,
-		blocks: [
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
-					text: message,
-				},
-			},
-			{
-				type: 'divider',
-			},
-			{
-				type: 'section',
-				text: {
-					type: 'mrkdwn',
-					text: `<${ html_url }|${ title }>`,
-				},
-			},
-		],
-		text: `${ message } -- <${ html_url }|${ title }>`, // Fallback text for display in notifications.
-		mrkdwn: true, // Formatting of the fallback text.
-		unfurl_links: false,
-		unfurl_media: false,
-	};
-}
-
-/**
- * Send a Slack notification about a label to Team KitKat.
- *
- * @param {WebhookPayloadIssue} payload - Issue event payload.
- * @param {GitHub}              octokit - Initialized Octokit REST client.
- */
-async function notifyKitKat( payload, octokit ) {
-	const {
-		issue: { number, state },
-		repository,
-	} = payload;
-	const { owner, name: repo } = repository;
-	const ownerLogin = owner.login;
-
-	const slackToken = getInput( 'slack_token' );
-	if ( ! slackToken ) {
-		setFailed( 'notify-kitkat: Input slack_token is required but missing. Aborting.' );
-		return;
-	}
-
-	const channel = getInput( 'slack_kitkat_channel' );
-	if ( ! channel ) {
-		setFailed( 'notify-kitkat: Input slack_kitkat_channel is required but missing. Aborting.' );
-		return;
-	}
-
-	// Only proceed if the issue is stil open.
-	if ( 'open' !== state ) {
-		debug( `notify-kitkat: Issue #${ number } is state '${ state }'. Aborting.` );
-		return;
-	}
-
-	// Only proceed if the issue is a confirmed bug.
-	const hasBugLabel = await isBug( octokit, ownerLogin, repo, number );
-	if ( ! hasBugLabel ) {
-		debug( `notify-kitkat: Issue #${ number } is not a bug. Aborting.` );
-		return;
-	}
-
-	// Check if Kitkat input was already requested for that issue.
-	const hasBeenRequested = await hasKitkatSignalLabel( octokit, ownerLogin, repo, number );
-	if ( hasBeenRequested ) {
-		debug( `notify-kitkat: Kitkat input was already requested for issue #${ number }. Aborting.` );
-		return;
-	}
-
-	// Check for a [Pri] High label.
-	const isLabeledHighPriority = await hasHighPrioLabel( octokit, ownerLogin, repo, number );
-	if ( isLabeledHighPriority ) {
-		debug(
-			`notify-kitkat: Found a [Pri] High label on issue #${ number }. Sending in Slack message.`
-		);
-		const message = `New high priority bug! Please check the priority.`;
-		const slackMessageFormat = formatSlackMessage( payload, channel, message );
-		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
-	}
-
-	// Check for a BLOCKER priority label.
-	const isLabeledBlocker = await hasBlockerPrioLabel( octokit, ownerLogin, repo, number );
-	if ( isLabeledBlocker ) {
-		debug(
-			`notify-kitkat: Found a [Pri] BLOCKER label on issue #${ number }. Sending in Slack message.`
-		);
-		const message = `New blocker bug!  Please check the priority.`;
-		const slackMessageFormat = formatSlackMessage( payload, channel, message );
-		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
-	}
-
-	if ( isLabeledHighPriority || isLabeledBlocker ) {
-		debug( `notify-kitkat: Adding a label to issue #${ number } to show that Kitkat was warned.` );
-		await octokit.rest.issues.addLabels( {
-			owner: ownerLogin,
-			repo,
-			issue_number: number,
-			labels: [ '[Status] Escalated' ],
-		} );
-	}
-}
-
-module.exports = notifyKitKat;
-
-
-/***/ }),
-
 /***/ 3427:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -20806,31 +20614,15 @@ module.exports = replyToCustomersReminder;
 
 /***/ }),
 
-/***/ 7542:
+/***/ 1966:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { getInput } = __nccwpck_require__( 4139 );
+const { getInput, setFailed } = __nccwpck_require__( 4139 );
 const debug = __nccwpck_require__( 7197 );
 const getLabels = __nccwpck_require__( 6913 );
 const sendSlackMessage = __nccwpck_require__( 1852 );
 
 /* global GitHub, WebhookPayloadIssue */
-
-/**
- * Check for a label showing that the Quality team was already notified.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasKitkatSignalLabel( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-
-	// Does the list of labels includes the "[Pri] TBD" label?
-	return labels.includes( '[Pri] TBD' );
-}
 
 /**
  * Check for Priority label on an issue
@@ -20839,12 +20631,30 @@ async function hasKitkatSignalLabel( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - Issue number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
+ * @returns {Promise<Array>} Promise resolving to an array of the existing Priority labels found.
  */
 async function hasPriorityLabels( octokit, owner, repo, number ) {
 	const labels = await getLabels( octokit, owner, repo, number );
-	// We're only interested in priority labels, but not if the label is [Pri] TBD.
-	return !! labels.find( label => label !== '[Pri] TBD' && label.match( /^\[Pri\].*$/ ) );
+
+	return labels.filter( label => label.match( /^\[Pri\].*$/ ) );
+}
+
+/**
+ * Check for a label showing that it was already escalated.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {string} number  - Issue number.
+ * @returns {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasEscalatedLabel( octokit, owner, repo, number ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+
+	// Does the list of labels includes the "[Status] Escalated" or "[Status] Escalated to Kitkat" label?
+	return (
+		labels.includes( '[Status] Escalated' ) || labels.includes( '[Status] Escalated to Kitkat' )
+	);
 }
 
 /**
@@ -20854,12 +20664,21 @@ async function hasPriorityLabels( octokit, owner, repo, number ) {
  * @param {string} owner   - Repository owner.
  * @param {string} repo    - Repository name.
  * @param {string} number  - Issue number.
+ * @param {string} action  - Action that triggered the event ('opened', 'reopened', 'labeled').
+ * @param {object} label   - Label that was added to the issue.
  * @returns {Promise<boolean>} Promise resolving to boolean.
  */
-async function isBug( octokit, owner, repo, number ) {
+async function isBug( octokit, owner, repo, number, action, label ) {
+	// If the issue has a "[Type] Bug" label, it's a bug.
 	const labels = await getLabels( octokit, owner, repo, number );
+	if ( labels.includes( '[Type] Bug' ) ) {
+		return true;
+	}
 
-	return labels.includes( '[Type] Bug' );
+	// Next, check if the current event was a [Type] Bug label being added.
+	if ( 'labeled' === action && '[Type] Bug' === label.name ) {
+		return true;
+	}
 }
 
 /**
@@ -20877,7 +20696,7 @@ function findPlugins( body ) {
 		return plugins.split( ', ' ).filter( v => v.trim() !== '' );
 	}
 
-	debug( `triage-new-issues: No plugin indicators found.` );
+	debug( `triage-issues: No plugin indicators found.` );
 	return [];
 }
 
@@ -20898,7 +20717,7 @@ function findPlatforms( body ) {
 			.filter( platform => platform !== 'Self-hosted' && platform.trim() !== '' );
 	}
 
-	debug( `triage-new-issues: no platform indicators found.` );
+	debug( `triage-issues: no platform indicators found.` );
 	return [];
 }
 
@@ -20918,7 +20737,7 @@ function findPriority( body ) {
 		const [ , impact = '', blocking = '' ] = match;
 
 		debug(
-			`triage-new-issues: Reported priority indicators for issue: "${ impact }" / "${ blocking }"`
+			`triage-issues: Reported priority indicators for issue: "${ impact }" / "${ blocking }"`
 		);
 
 		if ( blocking === 'No and the platform is unusable' ) {
@@ -20930,11 +20749,11 @@ function findPriority( body ) {
 		} else if ( blocking !== '' && blocking !== '_No response_' ) {
 			return impact === 'All' || impact === 'Most (> 50%)' ? 'Normal' : 'Low';
 		}
-		return null;
+		return 'TBD';
 	}
 
-	debug( `triage-new-issues: No priority indicators found.` );
-	return null;
+	debug( `triage-issues: No priority indicators found.` );
+	return 'TBD';
 }
 
 /**
@@ -20978,118 +20797,132 @@ function formatSlackMessage( payload, channel, message ) {
 }
 
 /**
- * Add labels to newly opened issues.
+ * Automatically add labels to issues, and send Slack notifications.
+ *
+ * This task can send 2 different types of Slack notifications:
+ * - If an issue is determined as High or Blocker priority,
+ * - If no priority is determined.
  *
  * @param {WebhookPayloadIssue} payload - Issue event payload.
  * @param {GitHub}              octokit - Initialized Octokit REST client.
  */
-async function triageNewIssues( payload, octokit ) {
-	const { issue, repository } = payload;
-	const { number, body } = issue;
-	const { owner, name } = repository;
+async function triageIssues( payload, octokit ) {
+	const { action, issue, label = {}, repository } = payload;
+	const { number, body, state } = issue;
+	const { owner, name, full_name } = repository;
 	const ownerLogin = owner.login;
 
-	// Find impacted plugins.
-	const impactedPlugins = findPlugins( body );
-	if ( impactedPlugins.length > 0 ) {
-		debug( `triage-new-issues: Adding plugin labels to issue #${ number }` );
-
-		const pluginLabels = impactedPlugins.map( plugin => `[Plugin] ${ plugin }` );
-
-		await octokit.rest.issues.addLabels( {
-			owner: ownerLogin,
-			repo: name,
-			issue_number: number,
-			labels: pluginLabels,
-		} );
+	const slackToken = getInput( 'slack_token' );
+	if ( ! slackToken ) {
+		setFailed( 'triage-issues: Input slack_token is required but missing. Aborting.' );
+		return;
 	}
 
-	// Find platform info.
-	const impactedPlatforms = findPlatforms( body );
-	if ( impactedPlatforms.length > 0 ) {
-		debug( `triage-new-issues: Adding platform labels to issue #${ number }` );
-
-		const platformLabels = impactedPlatforms.map( platform => `[Platform] ${ platform }` );
-
-		await octokit.rest.issues.addLabels( {
-			owner: ownerLogin,
-			repo: name,
-			issue_number: number,
-			labels: platformLabels,
-		} );
+	const channel = getInput( 'slack_quality_channel' );
+	if ( ! channel ) {
+		setFailed( 'triage-issues: Input slack_quality_channel is required but missing. Aborting.' );
+		return;
 	}
 
 	// Find Priority.
-	debug( `triage-new-issues: Finding priority for issue #${ number }` );
-	const priority = findPriority( body );
-	const hasPriorityLabel = await hasPriorityLabels( octokit, ownerLogin, name, number );
-	if ( priority !== null && ! hasPriorityLabel ) {
-		debug( `triage-new-issues: Adding priority label to issue #${ number }` );
-
-		await octokit.rest.issues.addLabels( {
-			owner: ownerLogin,
-			repo: name,
-			issue_number: number,
-			labels: [ `[Pri] ${ priority }` ],
-		} );
-	} else if ( priority === null && ! hasPriorityLabel ) {
-		const hasBugLabel = await isBug( octokit, ownerLogin, name, number );
-		// If the issue is not a confirmed bug
-		// we do not want to send a Slack notification.
-		if ( ! hasBugLabel ) {
-			debug(
-				`triage-new-issues: Issue #${ number } is not a bug. Not sending any Slack notification.`
-			);
-			return;
-		}
-
-		// No priority found, and no priority label.
-		// Let's notify the team so they can prioritize the issue appropriately.
-		// So far only enabled in the Calypso repo.
-		if ( 'Automattic/wp-calypso' !== repository.full_name ) {
-			return;
-		}
-
-		// No Slack tokens, we won't be able to escalate. Bail.
-		const slackToken = getInput( 'slack_token' );
-		const channel = getInput( 'slack_quality_channel' );
-		if ( ! slackToken || ! channel ) {
-			debug(
-				`triage-new-issues: No Slack token or channel found. Not sending any Slack notification for #${ number }.`
-			);
-			return null;
-		}
-
-		// Check if Kitkat input was already requested for that issue.
-		const hasBeenRequested = await hasKitkatSignalLabel( octokit, ownerLogin, name, number );
-		if ( hasBeenRequested ) {
-			debug(
-				`triage-new-issues: Kitkat input was already requested for issue #${ number }. Aborting.`
-			);
-			return;
-		}
-
+	const priorityLabels = await hasPriorityLabels( octokit, ownerLogin, name, number, action );
+	if ( priorityLabels.length > 0 ) {
 		debug(
-			`triage-new-issues: #${ number } doesn't have a Priority set. Sending in Slack message to the Kitkat team.`
+			`triage-issues: Issue #${ number } has existing priority labels: ${ priorityLabels.join(
+				', '
+			) }`
 		);
+	} else {
+		debug( `triage-issues: Issue #${ number } has no existing priority labels.` );
+	}
 
-		const message = '@kitkat-team New bug missing priority. Please do a priority assessment.';
+	debug( `triage-issues: Finding priority for issue #${ number } based off the issue contents.` );
+	const priority = findPriority( body );
+	debug( `triage-issues: Priority for issue #${ number } is ${ priority }` );
+
+	const isBugIssue = await isBug( octokit, ownerLogin, name, number, action, label );
+
+	// If this is a new issue, try to add labels.
+	if ( action === 'opened' || action === 'reopened' ) {
+		// Find impacted plugins, and add labels.
+		const impactedPlugins = findPlugins( body );
+		if ( impactedPlugins.length > 0 ) {
+			debug( `triage-issues: Adding plugin labels to issue #${ number }` );
+
+			const pluginLabels = impactedPlugins.map( plugin => `[Plugin] ${ plugin }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: pluginLabels,
+			} );
+		}
+
+		// Find platform info, and add labels.
+		const impactedPlatforms = findPlatforms( body );
+		if ( impactedPlatforms.length > 0 ) {
+			debug( `triage-issues: Adding platform labels to issue #${ number }` );
+
+			const platformLabels = impactedPlatforms.map( platform => `[Platform] ${ platform }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: platformLabels,
+			} );
+		}
+
+		// Add priority label to all bugs, if none already exists on the issue.
+		if ( priorityLabels.length === 0 && isBugIssue ) {
+			debug( `triage-issues: Adding [Pri] ${ priority } label to issue #${ number }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: [ `[Pri] ${ priority }` ],
+			} );
+
+			// If we're adding a TBD priority, if we're in the Calypso repo,
+			// send a Slack notification.
+			if ( priority === 'TBD' && full_name === 'Automattic/wp-calypso' ) {
+				debug(
+					`triage-issues: #${ number } doesn't have a Priority set. Sending in Slack message to the Kitkat team.`
+				);
+				const message = '@kitkat-team New bug missing priority. Please do a priority assessment.';
+				const slackMessageFormat = formatSlackMessage( payload, channel, message );
+				await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
+			}
+		}
+	}
+
+	// Is this a bug,
+	// Is the issue still opened,
+	// is it a high priority or blocker (inferred from the existing labels or from the issue body),
+	// and is this a new issue, not escalated yet?
+	// If so, send a Slack notification.
+	const isEscalated = await hasEscalatedLabel( octokit, ownerLogin, name, number );
+	const highPriorityIssue = priority === 'High' || priorityLabels.includes( '[Pri] High' );
+	const blockerIssue = priority === 'BLOCKER' || priorityLabels.includes( '[Pri] BLOCKER' );
+	if ( isBugIssue && state === 'open' && ! isEscalated && ( highPriorityIssue || blockerIssue ) ) {
+		const message = `New ${
+			highPriorityIssue ? 'High-priority' : 'Blocker'
+		} bug! Please check the priority.`;
 		const slackMessageFormat = formatSlackMessage( payload, channel, message );
 		await sendSlackMessage( message, channel, slackToken, payload, slackMessageFormat );
 
-		debug(
-			`triage-new-issues: Adding a label to issue #${ number } to show that Kitkat was warned.`
-		);
+		debug( `triage-issues: Adding a label to issue #${ number } to show that Kitkat was warned.` );
 		await octokit.rest.issues.addLabels( {
 			owner: ownerLogin,
 			repo: name,
 			issue_number: number,
-			labels: [ '[Pri] TBD' ],
+			labels: [ '[Status] Escalated' ],
 		} );
 	}
 }
-
-module.exports = triageNewIssues;
+module.exports = triageIssues;
 
 
 /***/ }),
@@ -21963,9 +21796,8 @@ const flagOss = __nccwpck_require__( 6327 );
 const gatherSupportReferences = __nccwpck_require__( 1030 );
 const notifyDesign = __nccwpck_require__( 3178 );
 const notifyEditorial = __nccwpck_require__( 4564 );
-const notifyKitKat = __nccwpck_require__( 450 );
 const replyToCustomersReminder = __nccwpck_require__( 3427 );
-const triageNewIssues = __nccwpck_require__( 7542 );
+const triageIssues = __nccwpck_require__( 1966 );
 const wpcomCommitReminder = __nccwpck_require__( 6410 );
 const debug = __nccwpck_require__( 7197 );
 const ifNotClosed = __nccwpck_require__( 4463 );
@@ -22008,11 +21840,6 @@ const automations = [
 		task: ifNotClosed( notifyEditorial ),
 	},
 	{
-		event: 'issues',
-		action: [ 'labeled' ],
-		task: notifyKitKat,
-	},
-	{
 		event: 'push',
 		task: wpcomCommitReminder,
 	},
@@ -22023,8 +21850,8 @@ const automations = [
 	},
 	{
 		event: 'issues',
-		action: [ 'opened', 'reopened' ],
-		task: triageNewIssues,
+		action: [ 'opened', 'reopened', 'labeled' ],
+		task: triageIssues,
 	},
 	{
 		event: 'issues',
