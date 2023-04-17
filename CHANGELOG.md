@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Add the Docs label whenever markdown files are edited.
+- Auto-labeling: update logic to use new [Focus] label.
 - Automated labeling: standardize how we track PRs with tests.
 - Changed the features directory to include the module directory as well.
 - Escalation task: update wording and icons.
