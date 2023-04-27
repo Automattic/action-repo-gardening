@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Add new task to notify Quality team of important issues
+- Add the legacy Photon label for PRs that make changes to the Image CDN package.
 - Auto labeling: add labels for common elements of the CRM plugin.
 - Create a new triageIssues task, to handle automated label triage and Slack notifications for important issues.
 
