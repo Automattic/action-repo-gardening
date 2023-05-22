@@ -20,6 +20,7 @@ This is an alpha version! The changes listed here are not final.
 - Auto-labeling: update logic to use new [Focus] label.
 - Automated labeling: standardize how we track PRs with tests.
 - Changed the features directory to include the module directory as well.
+- Don't complain about missing a changelog entry if the changelog itself is being changed.
 - Escalation task: update wording and icons.
 - Kitkat escalation task: change the name of the label applied to escalated issues.
 - Label management: do not loop through files for labels that do not require it.
