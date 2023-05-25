@@ -33,6 +33,7 @@ This is an alpha version! The changes listed here are not final.
 - The notifyKitKat and triageNewIssues tasks have been removed. The new triageIssues task now handles both of those tasks.
 
 ### Fixed
+- Changelogger checks: do not error out when require or require-dev are not set.
 - Triage: ensure we do not trigger triaging on events when a laabel that would impact our automated triage is already being added.
 - Use correct emoji in Kitkat notifications
 
