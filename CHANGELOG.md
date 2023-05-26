@@ -20,6 +20,7 @@ This is an alpha version! The changes listed here are not final.
 - Auto-labeling: update logic to use new [Focus] label.
 - Automated labeling: standardize how we track PRs with tests.
 - Changed the features directory to include the module directory as well.
+- Docs: Changing 'needs review' label wording for pull requests to more accurately reflect current processes
 - Don't complain about missing a changelog entry if the changelog itself is being changed.
 - Escalation task: update wording and icons.
 - Kitkat escalation task: change the name of the label applied to escalated issues.
