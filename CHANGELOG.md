@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Label cleanup: Remove `[Status] Stale` from closed PRs.
 
 ### Changed
+- addMilestone task: if a milestone description contains a string with "Code Freeze: YYYY-MM-DD" or "Branch Cut: YYYY-MM-DD", and that date has elapsed, then don't add PRs to that milestone. This prevents merged PRs from being automatically added to milestones that have entered a code freeze.
 - Label cleanup: Task now runs for closed issues as well as PRs.
 
 ## [4.0.0] - 2023-06-06
