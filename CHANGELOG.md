@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 - addMilestone task: if a milestone description contains a string with "Code Freeze: YYYY-MM-DD" or "Branch Cut: YYYY-MM-DD", and that date has elapsed, then don't add PRs to that milestone. This prevents merged PRs from being automatically added to milestones that have entered a code freeze.
 - Check description task: support different phrasing in milestone descriptiion. "Code Freeze" can also be "Branch cut".
 - Label cleanup: Task now runs for closed issues as well as PRs.
+- Labels: prefix module labels with [Feature], to match new bug reporting tool.
 
 ## [4.0.0] - 2023-06-06
 ### Added
