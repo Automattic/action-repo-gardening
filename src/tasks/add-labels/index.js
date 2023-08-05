@@ -273,7 +273,9 @@ async function addLabels( payload, octokit ) {
 	// Get labels to add to the PR.
 	const isDraft = !! ( pull_request && pull_request.draft );
 	const labels = await getLabelsToAdd( octokit, owner.login, name, number, isDraft );
-	const passedLabels = getInput( 'passed_labels' ) || [];
+	const passedLabels = getInput( 'passed_labels' );
+	debug( `labels: ${labels}` );
+	debug( `passed_labels: ${passedLabels}` );
 	const allLabels = [...labels, ...passedLabels];
 
 	if ( ! allLabels.length ) {
