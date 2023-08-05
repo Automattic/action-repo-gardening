@@ -265,7 +265,7 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft ) {
  * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
  * @param {GitHub}                    octokit - Initialized Octokit REST client.
  */
-async function addLabels( payload, octokit ) {
+async function addLabels( payload, octokit, passedLabels = [] ) {
 	const { number, repository, pull_request } = payload;
 	const { owner, name } = repository;
 
@@ -273,7 +273,9 @@ async function addLabels( payload, octokit ) {
 	const isDraft = !! ( pull_request && pull_request.draft );
 	const labels = await getLabelsToAdd( octokit, owner.login, name, number, isDraft );
 
-	if ( ! labels.length ) {
+	const allLabels = [...labels, ...passedLabels];
+
+	if ( ! allLabels.length ) {
 		debug( 'add-labels: Could not find labels to add to that PR. Aborting' );
 		return;
 	}
@@ -284,7 +286,7 @@ async function addLabels( payload, octokit ) {
 		owner: owner.login,
 		repo: name,
 		issue_number: number,
-		labels,
+		labels: allLabels,
 	} );
 }
 
