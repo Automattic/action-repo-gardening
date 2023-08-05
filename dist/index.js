@@ -18808,6 +18808,16 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft ) {
 			}
 		}
 
+		// Custom files passed from the workflow.
+		const passedLabels = getInput( 'passed_labels' );
+		passedLabels.forEach( 
+			passed => {
+				if ( file === passed.path ) {
+					keywords.add( passed.label );
+				}
+			}
+		);
+
 		// Modules.
 		const module = file.match( /^projects\/plugins\/jetpack\/modules\/(?<module>[^/]*)\// );
 		const moduleName = module && module.groups.module;
@@ -18942,12 +18952,8 @@ async function addLabels( payload, octokit ) {
 	// Get labels to add to the PR.
 	const isDraft = !! ( pull_request && pull_request.draft );
 	const labels = await getLabelsToAdd( octokit, owner.login, name, number, isDraft );
-	const passedLabels = getInput( 'passed_labels' );
-	debug( `labels: ${labels}` );
-	debug( `passed_labels: ${passedLabels}` );
-	const allLabels = [...labels, ...passedLabels];
 
-	if ( ! allLabels.length ) {
+	if ( ! labels.length ) {
 		debug( 'add-labels: Could not find labels to add to that PR. Aborting' );
 		return;
 	}
@@ -18958,7 +18964,7 @@ async function addLabels( payload, octokit ) {
 		owner: owner.login,
 		repo: name,
 		issue_number: number,
-		labels: allLabels,
+		labels: labels,
 	} );
 }
 
