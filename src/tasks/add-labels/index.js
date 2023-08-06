@@ -298,7 +298,7 @@ async function addLabels( payload, octokit ) {
 		owner: owner.login,
 		repo: name,
 		issue_number: number,
-		labels: labels,
+		labels,
 	} );
 }
 
