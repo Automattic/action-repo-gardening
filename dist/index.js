@@ -18815,7 +18815,8 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft ) {
 			const passedLabels = JSON.parse( passedLabelsString );
 			debug( `GOT passedLabels: ${ passedLabels }` );
 			passedLabels.forEach( passed => {
-				if ( file === passed.path ) {
+				if ( file.startsWith( passed.path ) ) {
+					debug( `passing: ${ passed.label } for ${ passed.path }` );
 					keywords.add( passed.label );
 				}
 			} );
@@ -18961,7 +18962,7 @@ async function addLabels( payload, octokit ) {
 		return;
 	}
 
-	debug( `add-labels: Adding labels to PR #${ number }` );
+	debug( `add-labels: Adding labels ${ labels } to PR #${ number }` );
 
 	await octokit.rest.issues.addLabels( {
 		owner: owner.login,
