@@ -82,6 +82,16 @@ The action relies on the following parameters.
 - (Optional) `slack_he_triage_channel` is the Slack public channel ID where messages for the HE Triage team will be posted. The value should be stored in a secret.
 - (Optional) `slack_quality_channel` is the Slack public channel ID where issues needing extra triage / escalation will be sent. The value should be stored in a secret.
 - (Optional) `reply_to_customers_threshold`. It is optional, and defaults to 10. It is the minimum number of support references needed to trigger an alert that we need to reply to customers.
+- (Optional) `add_labels`. Defaults to an empty string. So you can pass your own [{"path": "Label Name"}] via the workflow. Example: 
+```
+  ...
+  with:
+    tasks: 'addLabels'
+    add_labels: '[
+        {"path": "projects/your-project/", "label": "[Project] Your Project"},
+        {"path": "somepath/", "label": "Some path"}
+      ]'
+```
 
 #### How to create a Slack bot and get your SLACK_TOKEN
 
