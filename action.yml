@@ -8,8 +8,8 @@ inputs:
     description: "GitHub access token"
     required: true
     default: ${{ github.token }}
-  passed_labels:
-    description: 'Additional labels passed from a workflow.'
+  add_labels:
+    description: 'Labels and paths to match from a workflow.'
     required: false
     default: ""
   reply_to_customers_threshold:
