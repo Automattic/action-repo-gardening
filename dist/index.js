@@ -18809,14 +18809,17 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft ) {
 		}
 
 		// Custom files passed from the workflow.
-		const passedLabels = getInput( 'passed_labels' );
-		passedLabels.forEach( 
-			passed => {
+		const passedLabelsString = getInput( 'passed_labels' );
+		debug( `GOT passedLabelsString: ${ passedLabelsString }` );
+		if ( passedLabelsString ) {
+			const passedLabels = JSON.parse( passedLabelsString );
+			debug( `GOT passedLabels: ${ passedLabels }` );
+			passedLabels.forEach( passed => {
 				if ( file === passed.path ) {
 					keywords.add( passed.label );
 				}
-			}
-		);
+			} );
+		}
 
 		// Modules.
 		const module = file.match( /^projects\/plugins\/jetpack\/modules\/(?<module>[^/]*)\// );
