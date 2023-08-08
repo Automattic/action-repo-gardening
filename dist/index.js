@@ -18648,6 +18648,7 @@ function wrappy (fn, cb) {
 /***/ 6156:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const { getInput } = __nccwpck_require__( 4139 );
 const debug = __nccwpck_require__( 7197 );
 const getFiles = __nccwpck_require__( 1746 );
 
@@ -18786,6 +18787,19 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft ) {
 			if ( project.groups.ptype === 'js-packages' ) {
 				keywords.add( 'RNA' );
 			}
+		}
+
+		// Custom [{ "path": "label" }] values passed from a workflow.
+		const addLabelsString = getInput( 'add_labels' );
+		if ( addLabelsString ) {
+			debug( `GOT addLabelsString: ${ addLabelsString }` );
+			const addedLabels = JSON.parse( addLabelsString );
+			addedLabels.forEach( passed => {
+				if ( file.startsWith( passed.path ) ) {
+					debug( `passing: ${ passed.label } for ${ passed.path }` );
+					keywords.add( passed.label );
+				}
+			} );
 		}
 
 		// Modules.
@@ -18928,7 +18942,7 @@ async function addLabels( payload, octokit ) {
 		return;
 	}
 
-	debug( `add-labels: Adding labels to PR #${ number }` );
+	debug( `add-labels: Adding labels ${ labels } to PR #${ number }` );
 
 	await octokit.rest.issues.addLabels( {
 		owner: owner.login,

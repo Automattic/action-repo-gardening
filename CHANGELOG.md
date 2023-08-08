@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Label cleanup: Remove `[Status] Stale` from closed PRs.
+- Repo Gardening Action: Add add_labels input to addLabels task for setting custom path: label matching directly in the workflow.
 
 ### Changed
 - addMilestone task: if a milestone description contains a string with "Code Freeze: YYYY-MM-DD" or "Branch Cut: YYYY-MM-DD", and that date has elapsed, then don't add PRs to that milestone. This prevents merged PRs from being automatically added to milestones that have entered a code freeze.
