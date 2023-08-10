@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Auto-label features in the mu-wpcom package.
+- Gather Support References task: automatically label issues that include support references.
 - Label cleanup: Remove `[Status] Stale` from closed PRs.
 - Repo Gardening Action: Add add_labels input to addLabels task for setting custom path: label matching directly in the workflow.
 
