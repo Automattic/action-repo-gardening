@@ -21,6 +21,9 @@ This is an alpha version! The changes listed here are not final.
 - Label cleanup: Task now runs for closed issues as well as PRs.
 - Labels: prefix module labels with [Feature], to match new bug reporting tool.
 
+### Fixed
+- Don't crash on milestones with null description.
+
 ## [4.0.0] - 2023-06-06
 ### Added
 - Add new task to notify Quality team of important issues
