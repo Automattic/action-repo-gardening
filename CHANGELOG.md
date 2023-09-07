@@ -20,6 +20,7 @@ This is an alpha version! The changes listed here are not final.
 - Check description task: support different phrasing in milestone descriptiion. "Code Freeze" can also be "Branch cut".
 - Label cleanup: Task now runs for closed issues as well as PRs.
 - Labels: prefix module labels with [Feature], to match new bug reporting tool.
+- Labels: update Stats's label name.
 - Update the label used to mark issues that have reports from Happiness Engineers.
 
 ### Fixed
