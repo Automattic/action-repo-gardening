@@ -23,6 +23,9 @@ This is an alpha version! The changes listed here are not final.
 - Labels: update Stats's label name.
 - Update the label used to mark issues that have reports from Happiness Engineers.
 
+### Removed
+- Status checks: remove commit verification status check.
+
 ### Fixed
 - Don't crash on milestones with null description.
 

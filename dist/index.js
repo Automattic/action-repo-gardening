@@ -19133,29 +19133,6 @@ const getPrWorkspace = __nccwpck_require__( 1947 );
 /* global GitHub, WebhookPayloadPullRequest */
 
 /**
- * Check if a PR has unverified commits.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @returns {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasUnverifiedCommit( octokit, owner, repo, number ) {
-	for await ( const response of octokit.paginate.iterator( octokit.rest.pulls.listCommits, {
-		owner,
-		repo,
-		pull_number: +number,
-	} ) ) {
-		if ( response.data.find( commit => commit.commit.message.includes( '[not verified]' ) ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
  * Check for status labels on a PR.
  *
  * @param {GitHub} octokit - Initialized Octokit REST client.
@@ -19376,7 +19353,6 @@ async function getChangelogEntries( octokit, owner, repo, number ) {
  * Compose a list of checks for the PR
  * Covers:
  * - Short PR description
- * - Unverified commits
  * - Missing `[Status]` label
  * - Missing "Testing instructions"
  * - Missing Changelog entry
@@ -19394,7 +19370,6 @@ async function getStatusChecks( payload, octokit ) {
 	const ownerLogin = owner.login;
 
 	const hasLongDescription = body.length > 200;
-	const isClean = ! ( await hasUnverifiedCommit( octokit, ownerLogin, repo, number ) );
 	const isLabeled = await hasStatusLabels( octokit, ownerLogin, repo, number );
 	const hasTesting = body.includes( 'Testing instructions' );
 	const hasPrivacy = body.includes( 'data or activity we track or use' );
@@ -19403,7 +19378,6 @@ async function getStatusChecks( payload, octokit ) {
 
 	return {
 		hasLongDescription,
-		isClean,
 		isLabeled,
 		hasTesting,
 		hasPrivacy,
@@ -19424,14 +19398,6 @@ function renderStatusChecks( statusChecks ) {
 	let checks = statusEntry(
 		! statusChecks.hasLongDescription,
 		'Include a description of your PR changes.'
-	);
-
-	// Check all commits in PR.
-	// In this case, we use a different failure icon, as we do not consider this a blocker, it should not trigger label changes.
-	checks += statusEntry(
-		! statusChecks.isClean,
-		'All commits were linted before commit.',
-		'warning'
 	);
 
 	// Use labels please!
