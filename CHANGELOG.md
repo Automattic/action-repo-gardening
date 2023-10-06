@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 - Gather Support References task: automatically label issues that include support references.
 - Label automations: mark revert PRs with a label.
 - Label cleanup: Remove `[Status] Stale` from closed PRs.
+- New task: updateBoard allows you to automate updates to a GitHub Project Board fields to match priority labels on an issue in your repo.
 - Repo Gardening Action: Add add_labels input to addLabels task for setting custom path: label matching directly in the workflow.
 
 ### Changed
