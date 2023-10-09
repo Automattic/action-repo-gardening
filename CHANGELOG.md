@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Auto-label features in the mu-wpcom package.
+- Board triage task: automatically add issues classified as bugs to the project board.
 - Gather Support References task: automatically label issues that include support references.
 - Label automations: mark revert PRs with a label.
 - Label cleanup: Remove `[Status] Stale` from closed PRs.
