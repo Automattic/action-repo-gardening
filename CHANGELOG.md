@@ -33,6 +33,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Fixed
 - Don't crash on milestones with null description.
+- Project Board automations: do not run any automation on closed issues.
 
 ## [4.0.0] - 2023-06-06
 ### Added
