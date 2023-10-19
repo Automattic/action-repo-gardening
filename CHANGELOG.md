@@ -30,6 +30,7 @@ This is an alpha version! The changes listed here are not final.
 - Update the label used to mark issues that have reports from Happiness Engineers.
 
 ### Removed
+- Description task: remove reference to "Required review" check that was removed a while back.
 - Status checks: remove commit verification status check.
 
 ### Fixed
