@@ -34,6 +34,7 @@ This is an alpha version! The changes listed here are not final.
 - Status checks: remove commit verification status check.
 
 ### Fixed
+- Adds Woo Sync to GH label name exceptions.
 - Don't crash on milestones with null description.
 - Project Board automations: do not run any automation on closed issues.
 
