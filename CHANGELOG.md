@@ -25,6 +25,7 @@ This is an alpha version! The changes listed here are not final.
 - Description task: update milestone details to include information about the different release schedules.
 - Issue Triage: update the "Escalated" status label to "Priority Review Triggered".
 - Label cleanup: Task now runs for closed issues as well as PRs.
+- Labelling: handle automatic labeling of Contact Form changes in the package.
 - Labels: prefix module labels with [Feature], to match new bug reporting tool.
 - Labels: update "Premium Content" to "Paid Content".
 - Labels: update Stats's label name.
