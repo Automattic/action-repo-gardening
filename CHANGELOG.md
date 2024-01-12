@@ -41,6 +41,7 @@ This is an alpha version! The changes listed here are not final.
 ### Fixed
 - Adds Woo Sync to GH label name exceptions.
 - Automated Board triage: fix event reference to trigger the action.
+- Board triage: ensure the task works when the organization name is capitalized
 - Don't crash on milestones with null description.
 - Issue references: avoid changing capitalization of p2 shortlinks.
 - Issue references: do not gather support references in Pull Requests, only in issues.
