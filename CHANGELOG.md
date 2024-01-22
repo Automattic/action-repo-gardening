@@ -32,6 +32,7 @@ This is an alpha version! The changes listed here are not final.
 - Labels: update "Premium Content" to "Paid Content".
 - Labels: update Stats's label name.
 - Project Board triage: handle issues waiting on a third-party fix when auto-triaging.
+- Updated package dependencies.
 - Update the label used to mark issues that have reports from Happiness Engineers.
 
 ### Removed
