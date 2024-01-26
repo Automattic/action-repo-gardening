@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.1.0-alpha] - unreleased
+## [5.0.0-alpha] - unreleased
 
 This is an alpha version! The changes listed here are not final.
 
@@ -34,6 +34,7 @@ This is an alpha version! The changes listed here are not final.
 - Project Board triage: handle issues waiting on a third-party fix when auto-triaging.
 - Updated package dependencies.
 - Update the label used to mark issues that have reports from Happiness Engineers.
+- Use the node20 runner instead of the deprecated node16 runner.
 
 ### Removed
 - Description task: remove reference to "Required review" check that was removed a while back.
@@ -209,7 +210,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[4.1.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v4.0.0...v4.1.0-alpha
+[5.0.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v4.0.0...v5.0.0-alpha
 [4.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/Automattic/action-repo-gardening/compare/v3.1.0...v3.1.1
 [3.1.0]: https://github.com/Automattic/action-repo-gardening/compare/v3.0.0...v3.1.0
