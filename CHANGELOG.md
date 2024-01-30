@@ -26,6 +26,7 @@ This is an alpha version! The changes listed here are not final.
 - Check description task: support different phrasing in milestone descriptiion. "Code Freeze" can also be "Branch cut".
 - Description task: update milestone details to include information about the different release schedules.
 - Gather Support References: also gather p2 comment references.
+- Gather Support References: consider forum links to be a valid support reference.
 - Issue Triage: update the "Escalated" status label to "Priority Review Triggered".
 - Label cleanup: Task now runs for closed issues as well as PRs.
 - Labelling: handle automatic labeling of Contact Form changes in the package.
