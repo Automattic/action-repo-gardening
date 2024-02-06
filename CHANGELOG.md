@@ -23,6 +23,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - addMilestone task: if a milestone description contains a string with "Code Freeze: YYYY-MM-DD" or "Branch Cut: YYYY-MM-DD", and that date has elapsed, then don't add PRs to that milestone. This prevents merged PRs from being automatically added to milestones that have entered a code freeze.
+- Board triage: update team Zap's assignment settings.
 - Check description task: support different phrasing in milestone descriptiion. "Code Freeze" can also be "Branch cut".
 - Description task: update milestone details to include information about the different release schedules.
 - Gather Support References: also gather p2 comment references.

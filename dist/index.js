@@ -42784,12 +42784,6 @@ const automatticAssignments = {
 		slack_id: 'C01B6KEJ5GE',
 		board_id: 'https://github.com/orgs/Automattic/projects/718',
 	},
-	Newsletter: {
-		team: 'Zap',
-		labels: [ '[Block] Subscriptions', '[Block] Paywall', '[Feature] Subscriptions' ],
-		slack_id: 'C02NQ4HMJKV',
-		board_id: 'https://github.com/orgs/Automattic/projects/657',
-	},
 	Reader: {
 		team: 'Loop',
 		labels: [ '[Feature] Reader' ],
@@ -42862,6 +42856,12 @@ const automatticAssignments = {
 		team: 'Agora',
 		labels: [ '[Package] My Jetpack' ],
 		slack_id: 'C02TQF5VAJD',
+	},
+	Newsletter: {
+		team: 'Zap',
+		labels: [ '[Block] Subscriptions', '[Block] Paywall' ],
+		slack_id: 'C02NQ4HMJKV',
+		board_id: 'https://github.com/orgs/Automattic/projects/657',
 	},
 	Protect: {
 		team: 'Scan',
