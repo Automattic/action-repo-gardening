@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Board triage management: update My Jetpack owners.
+- Tasks: run the Board update task before other tasks.
 
 ## [5.0.0] - 2024-02-07
 ### Added
