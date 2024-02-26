@@ -13,6 +13,9 @@ This is an alpha version! The changes listed here are not final.
 - Board triage management: update My Jetpack owners.
 - Tasks: run the Board update task before other tasks.
 
+### Fixed
+- Boost: Fix [Boost Feature] labels
+
 ## [5.0.0] - 2024-02-07
 ### Added
 - Auto-label features in the mu-wpcom package. [#32221]
