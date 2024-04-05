@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Board triage management: update My Jetpack owners.
 - Tasks: run the Board update task before other tasks.
+- Updated package dependencies.
 
 ### Fixed
 - Boost: Fix [Boost Feature] labels
