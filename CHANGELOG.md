@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.0.1-alpha] - unreleased
+## [5.1.0-alpha] - unreleased
 
 This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Auto-labeling: label changes to the WooCommerce Analytics package.
+- Repo Gardening: Check if PR owner is a member of the organization to determine if they're an OSS Citizen
 
 ### Changed
 - Board triage management: update My Jetpack owners.
@@ -227,7 +228,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[5.0.1-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.0.1-alpha
+[5.1.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.1.0-alpha
 [5.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v3.1.1...v4.0.0
 [3.1.1]: https://github.com/Automattic/action-repo-gardening/compare/v3.1.0...v3.1.1
