@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 - Repo Gardening: Check if PR owner is a member of the organization to determine if they're an OSS Citizen
 
 ### Changed
+- Auto-labeling: label changes to the SSO feature in the Connection package.
 - Board triage management: update My Jetpack owners.
 - Check Descriptions task: Ignore automated stub update PRs.
 - Tasks: run the Board update task before other tasks.
