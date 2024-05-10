@@ -14,6 +14,7 @@ This is an alpha version! The changes listed here are not final.
 - Repo Gardening: Check if PR owner is a member of the organization to determine if they're an OSS Citizen
 
 ### Changed
+- Auto-labeling: label changes to the Calypsoify package
 - Auto-labeling: label changes to the Classic Theme Helper package.
 - Auto-labeling: label changes to the Google Analytics package.
 - Auto-labeling: label changes to the Masterbar feature in the Masterbar package.
