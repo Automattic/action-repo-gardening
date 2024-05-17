@@ -22,6 +22,7 @@ This is an alpha version! The changes listed here are not final.
 - Board triage management: update My Jetpack owners.
 - Check Descriptions task: Ignore automated stub update PRs.
 - Tasks: run the Board update task before other tasks.
+- Triage: update alert word for Jetpack Developer Ambassadors guild
 - Updated package dependencies.
 
 ### Fixed

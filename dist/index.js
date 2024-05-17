@@ -43473,7 +43473,7 @@ function formatSlackMessage( payload, channel, message ) {
 	let dris = '';
 	switch ( repository.full_name ) {
 		case 'Automattic/jetpack':
-			dris = '@jpop-da';
+			dris = '@jetpack-da';
 			break;
 		case 'Automattic/zero-bs-crm':
 		case 'Automattic/sensei':
@@ -44093,7 +44093,7 @@ function formatSlackMessage( payload, channel, message ) {
 	let dris = '@bug_herders';
 	switch ( repository.full_name ) {
 		case 'Automattic/jetpack':
-			dris = '@jpop-da';
+			dris = '@jetpack-da';
 			break;
 		case 'Automattic/zero-bs-crm':
 		case 'Automattic/sensei':
