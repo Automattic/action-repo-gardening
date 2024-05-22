@@ -19,6 +19,7 @@ This is an alpha version! The changes listed here are not final.
 - Auto-labeling: label changes to the Google Analytics package.
 - Auto-labeling: label changes to the Masterbar feature in the Masterbar package.
 - Auto-labeling: label changes to the SSO feature in the Connection package.
+- Board triage: update board used to triage Stats issues.
 - Board triage management: update My Jetpack owners.
 - Check Descriptions task: Ignore automated stub update PRs.
 - Tasks: run the Board update task before other tasks.

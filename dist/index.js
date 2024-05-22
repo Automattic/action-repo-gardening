@@ -44496,7 +44496,7 @@ const automatticAssignments = {
 			'[Stats] Subscribers',
 		],
 		slack_id: 'C0438NHCLSY',
-		board_id: 'https://github.com/orgs/Automattic/projects/484',
+		board_id: 'https://github.com/orgs/Automattic/projects/1028',
 	},
 	'Super Cache': {
 		team: 'Heart of Gold',
