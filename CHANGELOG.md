@@ -26,6 +26,9 @@ This is an alpha version! The changes listed here are not final.
 - Triage: update alert word for Jetpack Developer Ambassadors guild
 - Updated package dependencies.
 
+### Removed
+- Check description task: Remove general guessing of release dates and code freezes. Add special casing for wpcomsh and mu-wpcom-plugin.
+
 ### Fixed
 - Boost: Fix [Boost Feature] labels
 - Check description task: Handle empty PR body.
