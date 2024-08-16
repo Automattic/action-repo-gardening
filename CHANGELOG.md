@@ -23,6 +23,7 @@ This is an alpha version! The changes listed here are not final.
 - Board triage management: update My Jetpack owners.
 - Check Descriptions task: Ignore automated stub update PRs.
 - Check PR description: update PR review workflow explanation to be clearer.
+- Check PR description: update PR review workflow explanation to have correct markdown indent
 - Tasks: run the Board update task before other tasks.
 - Triage: update alert word for Jetpack Developer Ambassadors guild
 - Updated package dependencies.
