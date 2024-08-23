@@ -35,6 +35,7 @@ This is an alpha version! The changes listed here are not final.
 - Boost: Fix [Boost Feature] labels
 - Check description task: Handle empty PR body.
 - Repo Gardening: fix workflow for adding [OSS Citizen] label.
+- WPCOM Commit Reminder rask: Fix detection of existing reminder comment.
 
 ## [5.0.0] - 2024-02-07
 ### Added

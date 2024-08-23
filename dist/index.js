@@ -39223,7 +39223,7 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft, isRevert )
 
 	debug( 'add-labels: Loop through all files modified in this PR and add matching labels.' );
 
-	files.map( file => {
+	for ( const file of files ) {
 		// Projects.
 		const project = file.match( /^projects\/(?<ptype>[^/]*)\/(?<pname>[^/]*)\// );
 		if ( project && project.groups.ptype && project.groups.pname ) {
@@ -39425,7 +39425,7 @@ async function getLabelsToAdd( octokit, owner, repo, number, isDraft, isRevert )
 		if ( anyTestFile ) {
 			keywords.add( '[Tests] Includes Tests' );
 		}
-	} );
+	}
 
 	// The Image CDN was previously named "Photon".
 	// If we're touching that package, let's add the Photon label too
@@ -39773,14 +39773,14 @@ async function getCheckComment( octokit, owner, repo, number ) {
 	debug( `check-description: Looking for a previous comment from this task in our PR.` );
 
 	const comments = await getComments( octokit, owner, repo, number );
-	comments.map( comment => {
+	for ( const comment of comments ) {
 		if (
 			comment.user.login === 'github-actions[bot]' &&
 			comment.body.includes( '**Thank you for your PR!**' )
 		) {
 			commentID = comment.id;
 		}
-	} );
+	}
 
 	return commentID;
 }
@@ -40207,7 +40207,7 @@ async function cleanLabels( payload, octokit ) {
 			labelsToRemoveFromPr
 		) }`
 	);
-	labelsToRemoveFromPr.map( name => {
+	for ( const name of labelsToRemoveFromPr ) {
 		debug( `clean-labels: removing the ${ name } label from PR #${ number }` );
 		octokit.rest.issues.removeLabel( {
 			owner: ownerLogin,
@@ -40215,7 +40215,7 @@ async function cleanLabels( payload, octokit ) {
 			issue_number: number,
 			name,
 		} );
-	} );
+	}
 }
 
 module.exports = cleanLabels;
@@ -40307,7 +40307,7 @@ async function getListComment( issueComments ) {
 
 	debug( `gather-support-references: Looking for a previous comment from this task in our issue.` );
 
-	issueComments.map( comment => {
+	for ( const comment of issueComments ) {
 		if (
 			comment.user.login === 'github-actions[bot]' &&
 			comment.body.includes( '**Support References**' )
@@ -40317,7 +40317,7 @@ async function getListComment( issueComments ) {
 				body: comment.body,
 			};
 		}
-	} );
+	}
 
 	return commentInfo;
 }
@@ -40361,18 +40361,18 @@ async function getIssueReferences( octokit, owner, repo, number, issueComments )
 	}
 
 	debug( `gather-support-references: Getting references from comments.` );
-	issueComments.map( comment => {
+	for ( const comment of issueComments ) {
 		if (
 			comment.user.login !== 'github-actions[bot]' ||
 			! comment.body.includes( '**Support References**' )
 		) {
 			ticketReferences.push( ...comment.body.matchAll( referencesRegexP ) );
 		}
-	} );
+	}
 
 	// Let's build a array with unique and correct support IDs, formatted properly.
 	const correctedSupportIds = new Set();
-	ticketReferences.map( reference => {
+	for ( const reference of ticketReferences ) {
 		let supportId = reference[ 0 ];
 
 		// xxx-zen is the preferred format for tickets.
@@ -40388,7 +40388,7 @@ async function getIssueReferences( octokit, owner, repo, number, issueComments )
 		}
 
 		correctedSupportIds.add( supportId );
-	} );
+	}
 
 	return [ ...correctedSupportIds ];
 }
@@ -42250,14 +42250,14 @@ async function getMatticBotComment( octokit, owner, repo, number ) {
 	debug( `wpcom-commit-reminder: Looking for a comment from Matticbot on this PR.` );
 
 	const comments = await getComments( octokit, owner.login, repo, number );
-	comments.map( comment => {
+	for ( const comment of comments ) {
 		if (
 			comment.user.login === 'matticbot' &&
 			comment.body.includes( 'This PR has changes that must be merged to WordPress.com' )
 		) {
 			commentBody = comment.body;
 		}
-	} );
+	}
 
 	return commentBody;
 }
@@ -42275,14 +42275,14 @@ async function hasReminderComment( octokit, owner, repo, number ) {
 	debug( `wpcom-commit-reminder: Looking for a previous comment from this task in our PR.` );
 
 	const comments = await getComments( octokit, owner.login, repo, number );
-	comments.map( comment => {
+	for ( const comment of comments ) {
 		if (
 			comment.user.login === 'github-actions[bot]' &&
 			comment.body.includes( 'Great news! One last step' )
 		) {
 			return true;
 		}
-	} );
+	}
 
 	return false;
 }
@@ -42496,9 +42496,9 @@ async function getComments( octokit, owner, repo, number ) {
 		issue_number: +number,
 		per_page: 100,
 	} ) ) {
-		response.data.map( comment => {
+		for ( const comment of response.data ) {
 			issueComments.push( comment );
-		} );
+		}
 	}
 
 	cache[ cacheKey ] = issueComments;
@@ -42544,12 +42544,12 @@ async function getFiles( octokit, owner, repo, number ) {
 		pull_number: +number,
 		per_page: 100,
 	} ) ) {
-		response.data.map( file => {
+		for ( const file of response.data ) {
 			fileList.push( file.filename );
 			if ( file.previous_filename ) {
 				fileList.push( file.previous_filename );
 			}
-		} );
+		}
 	}
 
 	cache[ cacheKey ] = fileList;
@@ -42663,12 +42663,12 @@ const getLabels = __nccwpck_require__( 5479 );
 async function getPluginNames( octokit, owner, repo, number ) {
 	const plugins = [];
 	const labels = await getLabels( octokit, owner, repo, number );
-	labels.map( label => {
+	for ( const label of labels ) {
 		const plugin = label.match( /^\[Plugin\]\s(?<pluginName>[^/]*)$/ );
 		if ( plugin && plugin.groups.pluginName ) {
 			plugins.push( plugin.groups.pluginName.replace( /\s+/, '-' ).toLowerCase() );
 		}
-	} );
+	}
 
 	return plugins;
 }
@@ -42794,9 +42794,9 @@ async function getLabels( octokit, owner, repo, number ) {
 		issue_number: +number,
 		per_page: 100,
 	} ) ) {
-		response.data.map( label => {
+		for ( const label of response.data ) {
 			labelList.push( label.name );
-		} );
+		}
 	}
 
 	cache[ cacheKey ] = labelList;
@@ -43046,8 +43046,7 @@ const { getInput } = __nccwpck_require__( 2722 );
 async function hasManySupportReferences( issueComments ) {
 	const referencesThreshhold = getInput( 'reply_to_customers_threshold' );
 
-	let isWidelySpreadIssue = false;
-	issueComments.map( comment => {
+	for ( const comment of issueComments ) {
 		if (
 			comment.user.login === 'github-actions[bot]' &&
 			comment.body.includes( '**Support References**' )
@@ -43055,12 +43054,12 @@ async function hasManySupportReferences( issueComments ) {
 			// Count the number of to-do items in the comment.
 			const countReferences = comment.body.split( '- [ ] ' ).length - 1;
 			if ( countReferences >= parseInt( referencesThreshhold ) ) {
-				isWidelySpreadIssue = true;
+				return true;
 			}
 		}
-	} );
+	}
 
-	return isWidelySpreadIssue;
+	return false;
 }
 
 module.exports = hasManySupportReferences;
