@@ -12,6 +12,9 @@ This is an alpha version! The changes listed here are not final.
 ### Added
 - Issue triage: allow querying OpenAI to get a list of labels that could potentially be added to an issue, based off the issue body, when the issue is opened.
 
+### Changed
+- Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
+
 ## [5.1.0] - 2024-08-29
 ### Added
 - Auto-labeling: label changes to the WooCommerce Analytics package. [#36281]
