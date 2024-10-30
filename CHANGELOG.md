@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
+- Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
 
 ## [5.1.0] - 2024-08-29
 ### Added
