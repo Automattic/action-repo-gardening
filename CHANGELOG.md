@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.2.0-alpha] - unreleased
+## [6.0.0-alpha] - unreleased
 
 This is an alpha version! The changes listed here are not final.
 
@@ -13,7 +13,9 @@ This is an alpha version! The changes listed here are not final.
 - Issue triage: allow querying OpenAI to get a list of labels that could potentially be added to an issue, based off the issue body, when the issue is opened.
 
 ### Changed
+- Board Triage: remove updateBoard task. It will now be part of the existing triageIssues task.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
+- Issue escalation: allow escalating the issue to multiple teams.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
 - Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
 
@@ -251,7 +253,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[5.2.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v5.1.0...v5.2.0-alpha
+[6.0.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v5.1.0...v6.0.0-alpha
 [5.1.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.1.0
 [5.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v3.1.1...v4.0.0

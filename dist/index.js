@@ -42955,22 +42955,14 @@ module.exports = replyToCustomersReminder;
 
 /***/ }),
 
-/***/ 1966:
+/***/ 9916:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { getInput, setFailed } = __nccwpck_require__( 2722 );
+const { getInput } = __nccwpck_require__( 2722 );
 const debug = __nccwpck_require__( 7197 );
 const getAvailableLabels = __nccwpck_require__( 8998 );
 const getLabels = __nccwpck_require__( 5479 );
-const hasPriorityLabels = __nccwpck_require__( 8975 );
-const isBug = __nccwpck_require__( 2015 );
 const sendOpenAiRequest = __nccwpck_require__( 6137 );
-const findPlatforms = __nccwpck_require__( 4207 );
-const findPlugins = __nccwpck_require__( 2621 );
-const findPriority = __nccwpck_require__( 3033 );
-const formatSlackMessage = __nccwpck_require__( 3954 );
-const notifyImportantIssues = __nccwpck_require__( 2746 );
-const sendSlackMessage = __nccwpck_require__( 2146 );
 
 /* global GitHub, WebhookPayloadIssue */
 
@@ -42995,7 +42987,9 @@ async function fetchOpenAiLabelsSuggestions( octokit, owner, repo, title, body )
 
 	// If no labels are found, bail.
 	if ( repoLabels.length === 0 ) {
-		debug( 'triage-issues: No labels found in the repository. Aborting OpenAI request.' );
+		debug(
+			'triage-issues > auto-label: No labels found in the repository. Aborting OpenAI request.'
+		);
 		return suggestions;
 	}
 
@@ -43039,14 +43033,14 @@ Example response format:
 }`;
 
 	const response = await sendOpenAiRequest( prompt, 'json_object' );
-	debug( `triage-issues: OpenAI response: ${ response }` );
+	debug( `triage-issues > auto-label: OpenAI response: ${ response }` );
 
 	let parsedResponse;
 	try {
 		parsedResponse = JSON.parse( response );
 	} catch ( error ) {
 		debug(
-			`triage-issues: OpenAI did not send back the expected JSON-formatted response. Error: ${ error }`
+			`triage-issues > auto-label: OpenAI did not send back the expected JSON-formatted response. Error: ${ error }`
 		);
 		return suggestions;
 	}
@@ -43061,121 +43055,38 @@ Example response format:
 }
 
 /**
- * Automatically add labels to issues, and send Slack notifications.
+ * Automatically add labels to issues.
  *
- * This task can send 2 different types of Slack notifications:
- * - If an issue is determined as High or Blocker priority,
- * - If no priority is determined.
+ * When an issue is first opened, parse its contents, send them to OpenAI,
+ * and add labels if any matching labels can be found.
+ * During testing, we'll run it for any issues, not just opened,
+ * but only on issues with the "[Experiment] Automated labeling" label.
+ * In that situation, we'll add a label to note that the issue was processed.
  *
  * @param {WebhookPayloadIssue} payload - Issue event payload.
  * @param {GitHub}              octokit - Initialized Octokit REST client.
  */
-async function triageIssues( payload, octokit ) {
-	const { action, issue, label = {}, repository } = payload;
+async function aiLabeling( payload, octokit ) {
+	const { issue, repository } = payload;
 	const { number, body, title } = issue;
-	const { owner, name, full_name } = repository;
+	const { owner, name } = repository;
 	const ownerLogin = owner.login;
 
-	const channel = getInput( 'slack_quality_channel' );
-	if ( ! channel ) {
-		setFailed( 'triage-issues: Input slack_quality_channel is required but missing. Aborting.' );
+	const issueLabels = await getLabels( octokit, ownerLogin, name, number );
+	const apiKey = getInput( 'openai_api_key' );
+
+	if ( ! apiKey ) {
+		debug( `triage-issues > auto-label: No OpenAI key is provided. Bail.` );
 		return;
 	}
 
-	// Find Priority.
-	const priorityLabels = await hasPriorityLabels(
-		octokit,
-		ownerLogin,
-		name,
-		number,
-		action,
-		label
-	);
-	if ( priorityLabels.length > 0 ) {
-		debug(
-			`triage-issues: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
-				', '
-			) }`
-		);
-	} else {
-		debug( `triage-issues: Issue #${ number } has no existing priority labels.` );
-	}
-
-	debug( `triage-issues: Finding priority for issue #${ number } based off the issue contents.` );
-	const priority = findPriority( body );
-	debug( `triage-issues: Priority for issue #${ number } is ${ priority }` );
-
-	const isBugIssue = await isBug( octokit, ownerLogin, name, number, action, label );
-
-	// If this is a new issue, try to add labels.
-	if ( action === 'opened' || action === 'reopened' ) {
-		// Find impacted plugins, and add labels.
-		const impactedPlugins = findPlugins( body );
-		if ( impactedPlugins.length > 0 ) {
-			debug( `triage-issues: Adding plugin labels to issue #${ number }` );
-
-			const pluginLabels = impactedPlugins.map( plugin => `[Plugin] ${ plugin }` );
-
-			await octokit.rest.issues.addLabels( {
-				owner: ownerLogin,
-				repo: name,
-				issue_number: number,
-				labels: pluginLabels,
-			} );
-		}
-
-		// Find platform info, and add labels.
-		const impactedPlatforms = findPlatforms( body );
-		if ( impactedPlatforms.length > 0 ) {
-			debug( `triage-issues: Adding platform labels to issue #${ number }` );
-
-			const platformLabels = impactedPlatforms.map( platform => `[Platform] ${ platform }` );
-
-			await octokit.rest.issues.addLabels( {
-				owner: ownerLogin,
-				repo: name,
-				issue_number: number,
-				labels: platformLabels,
-			} );
-		}
-
-		// Add priority label to all bugs, if none already exists on the issue.
-		if ( priorityLabels.length === 0 && isBugIssue ) {
-			debug( `triage-issues: Adding [Pri] ${ priority } label to issue #${ number }` );
-
-			await octokit.rest.issues.addLabels( {
-				owner: ownerLogin,
-				repo: name,
-				issue_number: number,
-				labels: [ `[Pri] ${ priority }` ],
-			} );
-
-			// If we're adding a TBD priority, if we're in the Calypso repo,
-			// send a Slack notification.
-			if ( priority === 'TBD' && full_name === 'Automattic/wp-calypso' ) {
-				debug(
-					`triage-issues: #${ number } doesn't have a Priority set. Sending in Slack message to the triage team.`
-				);
-				const message = 'New bug missing priority. Please do a priority assessment.';
-				const slackMessageFormat = formatSlackMessage( payload, channel, message );
-				await sendSlackMessage( message, channel, payload, slackMessageFormat );
-			}
-		}
-	}
-
-	// When an issue is first opened, parse its contents, send them to OpenAI,
-	// and add labels if any matching labels can be found.
-	// During testing, we'll run it for any issues, not just opened,
-	// but only on issues with the "[Experiment] Automated labeling" label.
-	// In that situation, we'll add a label to note that the issue was processed.
-	const issueLabels = await getLabels( octokit, ownerLogin, name, number );
-	const apiKey = getInput( 'openai_api_key' );
 	if (
 		issueLabels.includes( '[Experiment] Automated labeling' ) &&
-		! issueLabels.includes( '[Experiment] AI labels added' ) &&
-		apiKey
+		! issueLabels.includes( '[Experiment] AI labels added' )
 	) {
-		debug( `triage-issues: Fetching labels suggested by OpenAI for issue #${ number }` );
+		debug(
+			`triage-issues > auto-label: Fetching labels suggested by OpenAI for issue #${ number }`
+		);
 		const { labels, explanations } = await fetchOpenAiLabelsSuggestions(
 			octokit,
 			ownerLogin,
@@ -43185,11 +43096,11 @@ async function triageIssues( payload, octokit ) {
 		);
 
 		if ( labels.length === 0 ) {
-			debug( `triage-issues: No labels suggested by OpenAI for issue #${ number }` );
+			debug( `triage-issues > auto-label: No labels suggested by OpenAI for issue #${ number }` );
 		} else {
 			// Add the suggested labels to the issue.
 			debug(
-				`triage-issues: Adding the following labels to issue #${ number }, as suggested by OpenAI: ${ labels.join(
+				`triage-issues > auto-label: Adding the following labels to issue #${ number }, as suggested by OpenAI: ${ labels.join(
 					', '
 				) }`
 			);
@@ -43222,18 +43133,13 @@ ${ Object.entries( explanations )
 			} );
 		}
 	}
-
-	// Send a Slack notification if the issue is important.
-	if ( isBugIssue ) {
-		await notifyImportantIssues( octokit, payload, channel );
-	}
 }
-module.exports = triageIssues;
+module.exports = aiLabeling;
 
 
 /***/ }),
 
-/***/ 9676:
+/***/ 8836:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -43439,67 +43345,206 @@ const automatticAssignments = {
 
 /***/ }),
 
-/***/ 301:
+/***/ 1225:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const debug = __nccwpck_require__( 7197 );
+const getLabels = __nccwpck_require__( 5479 );
+const findPriority = __nccwpck_require__( 3033 );
+
+/* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Try to figure out the priority of the issue based off its contents and existing labels.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {GitHub}              octokit - Initialized Octokit REST client.
+ *
+ * @return {Promise<object>} Promise resolving to an object, with 2 keys:
+ * - labels is an array of priority Labels matching this issue,
+ * - inferred is a boolean, returns true if the priority was inferred from the issue contents.
+ */
+async function getIssuePriority( payload, octokit ) {
+	const {
+		issue: { number, body },
+		repository: {
+			owner: { login: ownerLogin },
+			name,
+		},
+	} = payload;
+
+	const labels = await getLabels( octokit, ownerLogin, name, number );
+	const priorityLabels = labels.filter(
+		label => label.match( /^\[Pri\].*$/ ) && label !== '[Pri] TBD'
+	);
+	if ( priorityLabels.length > 0 ) {
+		debug(
+			`triage-issues > issue priority: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
+				', '
+			) }`
+		);
+		return {
+			labels: priorityLabels,
+			inferred: false,
+		};
+	}
+
+	// If the issue does not have Priority labels yet, let's try to infer one from the issue contents.
+	debug(
+		`triage-issues > issue priority: Finding priority for issue #${ number } based off the issue contents.`
+	);
+	const priority = findPriority( body );
+	debug(
+		`triage-issues > issue priority: Priority inferred from the issue contents for issue #${ number } is ${ priority }`
+	);
+
+	return {
+		labels: [ `[Pri] ${ priority }` ],
+		inferred: true,
+	};
+}
+
+module.exports = getIssuePriority;
+
+
+/***/ }),
+
+/***/ 1966:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { getInput } = __nccwpck_require__( 2722 );
+const debug = __nccwpck_require__( 7197 );
+const isBug = __nccwpck_require__( 2015 );
+const findPlatforms = __nccwpck_require__( 4207 );
+const findPlugins = __nccwpck_require__( 2621 );
+const formatSlackMessage = __nccwpck_require__( 3954 );
+const notifyImportantIssues = __nccwpck_require__( 2746 );
+const sendSlackMessage = __nccwpck_require__( 2146 );
+const aiLabeling = __nccwpck_require__( 9916 );
+const getIssuePriority = __nccwpck_require__( 1225 );
+const updateBoard = __nccwpck_require__( 5756 );
+
+/* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Automatically add labels to issues, and send Slack notifications.
+ *
+ * This task can send 2 different types of Slack notifications:
+ * - If an issue is determined as High or Blocker priority,
+ * - If no priority is determined.
+ *
+ * @param {WebhookPayloadIssue} payload - Issue event payload.
+ * @param {GitHub}              octokit - Initialized Octokit REST client.
+ */
+async function triageIssues( payload, octokit ) {
+	const { action, issue, label = {}, repository } = payload;
+	const { number, body, state } = issue;
+	const { owner, name, full_name } = repository;
+	const ownerLogin = owner.login;
+
+	// Do not run this task if the issue is not open.
+	if ( 'open' !== state ) {
+		debug( `triage-issues: Issue #${ number } is not open. No need to triage it.` );
+		return;
+	}
+
+	const { labels: priorityLabels, inferred } = await getIssuePriority( payload, octokit );
+	const isBugIssue = await isBug( octokit, ownerLogin, name, number, action, label );
+	const qualityChannel = getInput( 'slack_quality_channel' );
+
+	// If this is a new issue, add labels.
+	if ( action === 'opened' || action === 'reopened' ) {
+		// Find impacted plugins, and add labels.
+		const impactedPlugins = findPlugins( body );
+		if ( impactedPlugins.length > 0 ) {
+			debug( `triage-issues: Adding plugin labels to issue #${ number }` );
+
+			const pluginLabels = impactedPlugins.map( plugin => `[Plugin] ${ plugin }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: pluginLabels,
+			} );
+		}
+
+		// Find platform info, and add labels.
+		const impactedPlatforms = findPlatforms( body );
+		if ( impactedPlatforms.length > 0 ) {
+			debug( `triage-issues: Adding platform labels to issue #${ number }` );
+
+			const platformLabels = impactedPlatforms.map( platform => `[Platform] ${ platform }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: platformLabels,
+			} );
+		}
+
+		// Add priority label to the issue, if none already existed on the issue.
+		if ( priorityLabels.length === 1 && isBugIssue && inferred ) {
+			const inferredPriority = priorityLabels[ 0 ];
+			debug( `triage-issues: Adding ${ inferredPriority } label to issue #${ number }` );
+
+			await octokit.rest.issues.addLabels( {
+				owner: ownerLogin,
+				repo: name,
+				issue_number: number,
+				labels: [ inferredPriority ],
+			} );
+
+			// If we're adding a TBD priority, if we're in the Calypso repo,
+			// send a Slack notification.
+			if (
+				inferredPriority === '[Pri] TBD' &&
+				full_name === 'Automattic/wp-calypso' &&
+				qualityChannel
+			) {
+				debug(
+					`triage-issues: #${ number } doesn't have a Priority set. Sending in Slack message to the triage team.`
+				);
+				const message = 'New bug missing priority. Please do a priority assessment.';
+				const slackMessageFormat = formatSlackMessage( payload, qualityChannel, message );
+				await sendSlackMessage( message, qualityChannel, payload, slackMessageFormat );
+			}
+		}
+	}
+
+	// Use OpenAI to automatically add labels to issues.
+	await aiLabeling( payload, octokit );
+
+	// Triage the issue to a Project board if necessary and possible.
+	await updateBoard( payload, octokit, isBugIssue, priorityLabels );
+
+	// Send a Slack notification to Product ambassadors if the issue is important.
+	if (
+		isBugIssue &&
+		qualityChannel &&
+		priorityLabels.length > 0 &&
+		( priorityLabels.includes( '[Pri] BLOCKER' ) || priorityLabels.includes( '[Pri] High' ) )
+	) {
+		await notifyImportantIssues( octokit, payload, qualityChannel, 'product-ambassadors' );
+	}
+}
+module.exports = triageIssues;
+
+
+/***/ }),
+
+/***/ 5756:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 2722 );
 const { getOctokit } = __nccwpck_require__( 6864 );
 const debug = __nccwpck_require__( 7197 );
 const getLabels = __nccwpck_require__( 5479 );
-const hasPriorityLabels = __nccwpck_require__( 8975 );
-const isBug = __nccwpck_require__( 2015 );
 const notifyImportantIssues = __nccwpck_require__( 2746 );
-const { automatticAssignments } = __nccwpck_require__( 9676 );
+const { automatticAssignments } = __nccwpck_require__( 8836 );
 
 /* global GitHub, WebhookPayloadIssue */
-
-/**
- * Check if an issue has a "Triaged" label.
- * It could be an existing label,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @return {Promise<boolean>} Promise resolving to true if the issue has a "Triaged" label.
- */
-async function hasTriagedLabel( octokit, owner, repo, number, action, eventLabel ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	if ( 'labeled' === action && eventLabel.name && eventLabel.name === 'Triaged' ) {
-		labels.push( eventLabel.name );
-	}
-
-	return labels.includes( 'Triaged' );
-}
-
-/**
- * Check if an issue needs to be handled by a third-party,
- * and thus cannot be fully triaged by us.
- * In practice, we look for 2 different labels:
- * "[Status] Needs 3rd Party Fix" and "[Status] Needs Core Fix"
- *
- * It could be an existing label,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @return {Promise<boolean>} Promise resolving to true if the issue needs a third-party fix.
- */
-async function needsThirdPartyFix( octokit, owner, repo, number, action, eventLabel ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	if ( 'labeled' === action && eventLabel.name ) {
-		labels.push( eventLabel.name );
-	}
-
-	return labels.some( label => label.match( /^\[Status\] Needs (3rd Party|Core) Fix$/ ) );
-}
 
 /**
  * Get Information about a project board.
@@ -43513,7 +43558,9 @@ async function getProjectDetails( octokit, projectBoardLink ) {
 		/^(?:https:\/\/)?github\.com\/(?<ownerType>orgs|users)\/(?<ownerName>[^/]+)\/projects\/(?<projectNumber>\d+)/;
 	const matches = projectBoardLink.match( projectRegex );
 	if ( ! matches ) {
-		debug( `update-board: Invalid project board link provided. Cannot triage to a board` );
+		debug(
+			`triage-issues > update-board: Invalid project board link provided. Cannot triage to a board`
+		);
 		return {};
 	}
 
@@ -43527,7 +43574,7 @@ async function getProjectDetails( octokit, projectBoardLink ) {
 		projectNumber: parseInt( projectNumber, 10 ),
 	};
 
-	debug( `update-board: Fetching info about project board.` );
+	debug( `triage-issues > update-board: Fetching info about project board.` );
 
 	// First, use the GraphQL API to request the project's node ID,
 	// as well as info about the first 20 fields for that project.
@@ -43645,12 +43692,19 @@ async function getIssueProjectItemId( octokit, projectInfo, repoName, issueId ) 
 /**
  * Add Issue to our project board.
  *
+ * @param {object} payload     - Issue event payload.
  * @param {GitHub} octokit     - Initialized Octokit REST client.
  * @param {object} projectInfo - Info about our project board.
- * @param {string} node_id     - The node_id of the Issue.
  * @return {Promise<string>} - Info about the project item id that was created.
  */
-async function addIssueToBoard( octokit, projectInfo, node_id ) {
+async function addIssueToBoard( payload, octokit, projectInfo ) {
+	const {
+		issue: { number, node_id },
+		repository: {
+			owner: { login: ownerLogin },
+			name,
+		},
+	} = payload;
 	const { projectNodeId } = projectInfo;
 
 	// Add our PR to that project board.
@@ -43672,11 +43726,19 @@ async function addIssueToBoard( octokit, projectInfo, node_id ) {
 
 	const projectItemId = projectItemDetails.addProjectV2ItemById.item.id;
 	if ( ! projectItemId ) {
-		debug( `update-board: Failed to add issue to project board.` );
+		debug( `triage-issues > update-board: Failed to add issue to project board.` );
 		return '';
 	}
 
-	debug( `update-board: Added issue to project board.` );
+	debug( `triage-issues > update-board: Added issue to project board.` );
+
+	// Add label to indicate that the issue was automatically triaged.
+	await octokit.rest.issues.addLabels( {
+		owner: ownerLogin,
+		repo: name,
+		issue_number: number,
+		labels: [ '[Status] Auto-allocated' ],
+	} );
 
 	return projectItemId;
 }
@@ -43703,7 +43765,7 @@ async function setPriorityField( octokit, projectInfo, projectItemId, priorityTe
 	const priorityOptionId = options.find( option => option.name === priorityText )?.id;
 	if ( ! priorityOptionId ) {
 		debug(
-			`update-board: Priority ${ priorityText } does not exist as a column option in the project board.`
+			`triage-issues > update-board: Priority ${ priorityText } does not exist as a column option in the project board.`
 		);
 		return '';
 	}
@@ -43730,12 +43792,14 @@ async function setPriorityField( octokit, projectInfo, projectItemId, priorityTe
 
 	const newProjectItemId = projectNewItemDetails.set_priority.projectV2Item.id;
 	if ( ! newProjectItemId ) {
-		debug( `update-board: Failed to set the "${ priorityText }" priority for this project item.` );
+		debug(
+			`triage-issues > update-board: Failed to set the "${ priorityText }" priority for this project item.`
+		);
 		return '';
 	}
 
 	debug(
-		`update-board: Project item ${ newProjectItemId } was moved to "${ priorityText }" priority.`
+		`triage-issues > update-board: Project item ${ newProjectItemId } was moved to "${ priorityText }" priority.`
 	);
 
 	return newProjectItemId; // New Project item ID (what we just edited). String.
@@ -43763,7 +43827,7 @@ async function setStatusField( octokit, projectInfo, projectItemId, statusText )
 	const statusOptionId = options.find( option => option.name === statusText )?.id;
 	if ( ! statusOptionId ) {
 		debug(
-			`update-board: Status ${ statusText } does not exist as a column option in the project board.`
+			`triage-issues > update-board: Status ${ statusText } does not exist as a column option in the project board.`
 		);
 		return '';
 	}
@@ -43790,12 +43854,14 @@ async function setStatusField( octokit, projectInfo, projectItemId, statusText )
 
 	const newProjectItemId = projectNewItemDetails.set_status.projectV2Item.id;
 	if ( ! newProjectItemId ) {
-		debug( `update-board: Failed to set the "${ statusText }" status for this project item.` );
+		debug(
+			`triage-issues > update-board: Failed to set the "${ statusText }" status for this project item.`
+		);
 		return '';
 	}
 
 	debug(
-		`update-board: Project item ${ newProjectItemId } was moved to "${ statusText }" status.`
+		`triage-issues > update-board: Project item ${ newProjectItemId } was moved to "${ statusText }" status.`
 	);
 
 	return newProjectItemId; // New Project item ID (what we just edited). String.
@@ -43823,7 +43889,7 @@ async function setTeamField( octokit, projectInfo, projectItemId, team ) {
 	const teamOptionId = options.find( option => option.name === team )?.id;
 	if ( ! teamOptionId ) {
 		debug(
-			`update-board: Team "${ team }" does not exist as a column option in the project board.`
+			`triage-issues > update-board: Team "${ team }" does not exist as a column option in the project board.`
 		);
 		return '';
 	}
@@ -43850,11 +43916,15 @@ async function setTeamField( octokit, projectInfo, projectItemId, team ) {
 
 	const newProjectItemId = projectNewItemDetails.set_team.projectV2Item.id;
 	if ( ! newProjectItemId ) {
-		debug( `update-board: Failed to set the "${ team }" team for this project item.` );
+		debug(
+			`triage-issues > update-board: Failed to set the "${ team }" team for this project item.`
+		);
 		return '';
 	}
 
-	debug( `update-board: Project item ${ newProjectItemId } was assigned to the "${ team }" team.` );
+	debug(
+		`triage-issues > update-board: Project item ${ newProjectItemId } was assigned to the "${ team }" team.`
+	);
 
 	return newProjectItemId; // New Project item ID (what we just edited). String.
 }
@@ -43875,7 +43945,7 @@ async function loadTeamAssignments( ownerLogin ) {
 	const teamAssignmentsString = getInput( 'labels_team_assignments' );
 	if ( ! teamAssignmentsString ) {
 		debug(
-			`update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+			`triage-issues > update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
 		);
 		return {};
 	}
@@ -43889,7 +43959,7 @@ async function loadTeamAssignments( ownerLogin ) {
 		! Object.values( teamAssignments ).some( assignment => assignment.labels )
 	) {
 		debug(
-			`update-board: Invalid mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+			`triage-issues > update-board: Invalid mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
 		);
 		return {};
 	}
@@ -43904,17 +43974,25 @@ async function loadTeamAssignments( ownerLogin ) {
  * It could be an existing label,
  * or it could be that it's being added as part of the event that triggers this action.
  *
- * @param {GitHub} octokit        - Initialized Octokit REST client.
- * @param {object} payload        - Issue event payload.
- * @param {object} projectInfo    - Info about our project board.
- * @param {string} projectItemId  - The ID of the project item.
- * @param {Array}  priorityLabels - Array of priority labels.
+ * @param {GitHub}  octokit        - Initialized Octokit REST client.
+ * @param {object}  payload        - Issue event payload.
+ * @param {object}  projectInfo    - Info about our project board.
+ * @param {string}  projectItemId  - The ID of the project item.
+ * @param {boolean} isBugIssue     - Is the issue a bug?
+ * @param {Array}   priorityLabels - Array of priority labels.
  * @return {Promise<string>} - The new project item id.
  */
-async function assignTeam( octokit, payload, projectInfo, projectItemId, priorityLabels ) {
+async function assignTeam(
+	octokit,
+	payload,
+	projectInfo,
+	projectItemId,
+	isBugIssue,
+	priorityLabels
+) {
 	const {
 		action,
-		issue: { number, node_id },
+		issue: { number },
 		label = {},
 		repository: { owner, name },
 	} = payload;
@@ -43923,7 +44001,7 @@ async function assignTeam( octokit, payload, projectInfo, projectItemId, priorit
 	const teamAssignments = await loadTeamAssignments( ownerLogin );
 	if ( ! teamAssignments ) {
 		debug(
-			`update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
+			`triage-issues > update-board: No mapping of teams <> labels provided. Cannot automatically assign an issue to a specific team on the board. Aborting.`
 		);
 		return projectItemId;
 	}
@@ -43944,38 +44022,43 @@ async function assignTeam( octokit, payload, projectInfo, projectItemId, priorit
 
 	if ( ! team ) {
 		debug(
-			`update-board: Issue #${ number } does not have a label that matches a team. Aborting.`
+			`triage-issues > update-board: Issue #${ number } does not have a label that matches a team. Aborting.`
 		);
 		return projectItemId;
 	}
 
 	// Set the status field for this project item.
 	debug(
-		`update-board: Assigning the "${ team }" team for this project item, issue #${ number }.`
+		`triage-issues > update-board: Assigning the "${ team }" team for this project item, issue #${ number }.`
 	);
 	projectItemId = await setTeamField( octokit, projectInfo, projectItemId, team );
 
 	// Does the team want to be notified in Slack about high/blocker priority issues?
-	if ( slack_id && priorityLabels.length > 0 ) {
+	if (
+		slack_id &&
+		priorityLabels.length > 0 &&
+		( priorityLabels.includes( '[Pri] BLOCKER' ) || priorityLabels.includes( '[Pri] High' ) ) &&
+		isBugIssue
+	) {
 		debug(
-			`update-board: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
+			`triage-issues > update-board: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
 				', '
 			) }. The ${ team } team is interested in getting Slack updates for important issues. Let’s notify them.`
 		);
-		await notifyImportantIssues( octokit, payload, slack_id );
+		await notifyImportantIssues( octokit, payload, slack_id, 'devs' );
 	}
 
 	// Does the team have a Project board where they track work for this feature? We can add the issue to that board.
 	if ( board_id ) {
 		debug(
-			`update-board: Issue #${ number } is associated with the "${ featureName }" feature, and the ${ team } team has a dedicated project board for this feature. Let’s add the issue to that board.`
+			`triage-issues > update-board: Issue #${ number } is associated with the "${ featureName }" feature, and the ${ team } team has a dedicated project board for this feature. Let’s add the issue to that board.`
 		);
 
 		// Get details about our project board, to use in our requests.
 		const featureProjectInfo = await getProjectDetails( octokit, board_id );
 		if ( Object.keys( featureProjectInfo ).length === 0 || ! featureProjectInfo.projectNodeId ) {
 			setFailed(
-				`update-board: we cannot fetch info about the project board associated to the "${ featureName }" feature. Aborting task.`
+				`triage-issues > update-board: we cannot fetch info about the project board associated to the "${ featureName }" feature. Aborting task.`
 			);
 			return projectItemId;
 		}
@@ -43988,11 +44071,13 @@ async function assignTeam( octokit, payload, projectInfo, projectItemId, priorit
 			number
 		);
 		if ( ! featureIssueItemId ) {
-			debug( `update-board: Issue #${ number } is not on our project board. Let’s add it.` );
+			debug(
+				`triage-issues > update-board: Issue #${ number } is not on our project board. Let’s add it.`
+			);
 
-			featureIssueItemId = await addIssueToBoard( octokit, featureProjectInfo, node_id );
+			featureIssueItemId = await addIssueToBoard( payload, octokit, featureProjectInfo );
 			if ( ! featureIssueItemId ) {
-				debug( `update-board: Failed to add issue to project board. Aborting.` );
+				debug( `triage-issues > update-board: Failed to add issue to project board. Aborting.` );
 				return projectItemId;
 			}
 		}
@@ -44005,33 +44090,30 @@ async function assignTeam( octokit, payload, projectInfo, projectItemId, priorit
  * Automatically update specific columns in our common GitHub project board,
  * to match labels applied to issues.
  *
- * @param {WebhookPayloadIssue} payload - Issue event payload.
- * @param {GitHub}              octokit - Initialized Octokit REST client.
+ * @param {WebhookPayloadIssue} payload        - Issue event payload.
+ * @param {GitHub}              octokit        - Initialized Octokit REST client.
+ * @param {boolean}             isBugIssue     - Is the issue a bug?
+ * @param {Array}               priorityLabels - Array of Priority Labels matching this issue.
  */
-async function updateBoard( payload, octokit ) {
-	const { action, issue, label = {}, repository } = payload;
-	const { number, node_id, state } = issue;
-	const { owner, name } = repository;
+async function updateBoard( payload, octokit, isBugIssue, priorityLabels ) {
+	const {
+		issue: { number },
+		repository: { owner, name },
+	} = payload;
 	const ownerLogin = owner.login;
-
-	// Do not run this task if the issue is not open.
-	if ( 'open' !== state ) {
-		debug(
-			`update-board: Issue #${ number } is not open. No need to update its status on the board.`
-		);
-		return;
-	}
 
 	const projectToken = getInput( 'triage_projects_token' );
 	if ( ! projectToken ) {
-		setFailed( `update-board: Input triage_projects_token is required but missing. Aborting.` );
+		setFailed(
+			`triage-issues > update-board: Input triage_projects_token is required but missing. Aborting.`
+		);
 		return;
 	}
 
 	const projectBoardLink = getInput( 'project_board_url' );
 	if ( ! projectBoardLink ) {
 		setFailed(
-			`update-board: No project board link provided. Cannot triage to a board. Aborting.`
+			`triage-issues > update-board: No project board link provided. Cannot triage to a board. Aborting.`
 		);
 		return;
 	}
@@ -44044,7 +44126,9 @@ async function updateBoard( payload, octokit ) {
 	// Get details about our project board, to use in our requests.
 	const projectInfo = await getProjectDetails( projectOctokit, projectBoardLink );
 	if ( Object.keys( projectInfo ).length === 0 || ! projectInfo.projectNodeId ) {
-		setFailed( `update-board: we cannot fetch info about our project board. Aborting task.` );
+		setFailed(
+			`triage-issues > update-board: we cannot fetch info about our project board. Aborting task.`
+		);
 		return;
 	}
 
@@ -44052,27 +44136,30 @@ async function updateBoard( payload, octokit ) {
 	let projectItemId = await getIssueProjectItemId( projectOctokit, projectInfo, name, number );
 	if ( ! projectItemId ) {
 		debug(
-			`update-board: Issue #${ number } is not on our project board. Let's check if it is a bug. If it is, we will want to add it to our board.`
+			`triage-issues > update-board: Issue #${ number } is not on our project board. Let's check if it is a bug. If it is, we will want to add it to our board.`
 		);
 
 		// If the issue is not a bug, stop.
-		const isBugIssue = await isBug( octokit, ownerLogin, name, number, action, label );
 		if ( ! isBugIssue ) {
-			debug( `update-board: Issue #${ number } is not classified as a bug. Aborting.` );
+			debug(
+				`triage-issues > update-board: Issue #${ number } is not classified as a bug. Aborting.`
+			);
 			return;
 		}
 
 		// If the issue is a bug, add it to our project board.
-		debug( `update-board: Issue #${ number } is a bug. Adding it to our project board.` );
-		projectItemId = await addIssueToBoard( projectOctokit, projectInfo, node_id );
+		debug(
+			`triage-issues > update-board: Issue #${ number } is a bug. Adding it to our project board.`
+		);
+		projectItemId = await addIssueToBoard( payload, projectOctokit, projectInfo );
 		if ( ! projectItemId ) {
-			debug( `update-board: Failed to add issue to project board. Aborting.` );
+			debug( `triage-issues > update-board: Failed to add issue to project board. Aborting.` );
 			return;
 		}
 
 		// Set the "Needs Triage" status for our issue on the board.
 		debug(
-			`update-board: Setting the "Needs Triage" status for this project item, issue #${ number }.`
+			`triage-issues > update-board: Setting the "Needs Triage" status for this project item, issue #${ number }.`
 		);
 		projectItemId = await setStatusField(
 			projectOctokit,
@@ -44083,24 +44170,16 @@ async function updateBoard( payload, octokit ) {
 	}
 
 	// Check if priority needs to be updated for that issue.
-	const priorityLabels = await hasPriorityLabels(
-		octokit,
-		ownerLogin,
-		name,
-		number,
-		action,
-		label
-	);
 	if ( priorityLabels.length > 0 ) {
 		debug(
-			`update-board: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
+			`triage-issues > update-board: Issue #${ number } has the following priority labels: ${ priorityLabels.join(
 				', '
 			) }`
 		);
 
 		// If we have no info about the Priority column, stop.
 		if ( ! projectInfo.priority ) {
-			debug( `update-board: No priority column found in project board. Aborting.` );
+			debug( `triage-issues > update-board: No priority column found in project board. Aborting.` );
 			return;
 		}
 
@@ -44109,7 +44188,7 @@ async function updateBoard( payload, octokit ) {
 
 		// Set the priority field for this project item.
 		debug(
-			`update-board: Setting the "${ priorityText }" priority for this project item, issue #${ number }.`
+			`triage-issues > update-board: Setting the "${ priorityText }" priority for this project item, issue #${ number }.`
 		);
 		projectItemId = await setPriorityField(
 			projectOctokit,
@@ -44119,22 +44198,17 @@ async function updateBoard( payload, octokit ) {
 		);
 	}
 
+	const labels = await getLabels( octokit, ownerLogin, name, number );
 	// Check if the issue has a "Triaged" label.
-	const hasTriaged = await hasTriagedLabel( octokit, ownerLogin, name, number, action, label );
-	if ( hasTriaged ) {
-		// Check if the issue depends on a third-party.
-		const needsThirdParty = await needsThirdPartyFix(
-			octokit,
-			ownerLogin,
-			name,
-			number,
-			action,
-			label
-		);
-		if ( needsThirdParty ) {
+	if ( labels.includes( 'Triaged' ) ) {
+		// Check if the issue depends on a third-party,
+		// and thus cannot be fully triaged by us.
+		// In practice, we look for 2 different labels:
+		// "[Status] Needs 3rd Party Fix" and "[Status] Needs Core Fix"
+		if ( labels.some( label => label.match( /^\[Status\] Needs (3rd Party|Core) Fix$/ ) ) ) {
 			// Let's update the status field to "Needs Core/3rd Party Fix" instead of "Triaged".
 			debug(
-				`update-board: Issue #${ number } needs a third-party fix. Setting the "Needs Core/3rd Party Fix" status for this project item.`
+				`triage-issues > update-board: Issue #${ number } needs a third-party fix. Setting the "Needs Core/3rd Party Fix" status for this project item.`
 			);
 			await setStatusField(
 				projectOctokit,
@@ -44147,7 +44221,7 @@ async function updateBoard( payload, octokit ) {
 
 		// Set the status field for this project item.
 		debug(
-			`update-board: Setting the "Triaged" status for this project item, issue #${ number }.`
+			`triage-issues > update-board: Setting the "Triaged" status for this project item, issue #${ number }.`
 		);
 		await setStatusField( projectOctokit, projectInfo, projectItemId, 'Triaged' );
 	}
@@ -44159,6 +44233,7 @@ async function updateBoard( payload, octokit ) {
 		payload,
 		projectInfo,
 		projectItemId,
+		isBugIssue,
 		priorityLabels
 	);
 }
@@ -44800,85 +44875,6 @@ module.exports = getLabels;
 
 /***/ }),
 
-/***/ 92:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const getLabels = __nccwpck_require__( 5479 );
-
-/* global GitHub */
-
-/**
- * Check for a "[Status] Priority Review Triggered" label showing that it was already escalated.
- * It could be an existing label,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @return {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasEscalatedLabel( octokit, owner, repo, number, action, eventLabel ) {
-	// Check for an exisiting label first.
-	const labels = await getLabels( octokit, owner, repo, number );
-	if (
-		labels.includes( '[Status] Priority Review Triggered' ) ||
-		labels.includes( '[Status] Escalated to Kitkat' )
-	) {
-		return true;
-	}
-
-	// If the issue is being labeled, check if the label is "[Status] Priority Review Triggered".
-	if (
-		'labeled' === action &&
-		eventLabel.name &&
-		eventLabel.name.match( /^\[Status\] Priority Review Triggered.*$/ )
-	) {
-		return true;
-	}
-}
-
-module.exports = hasEscalatedLabel;
-
-
-/***/ }),
-
-/***/ 8975:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const getLabels = __nccwpck_require__( 5479 );
-
-/* global GitHub */
-
-/**
- * Check for Priority labels on an issue.
- * It could be existing labels,
- * or it could be that it's being added as part of the event that triggers this action.
- *
- * @param {GitHub} octokit    - Initialized Octokit REST client.
- * @param {string} owner      - Repository owner.
- * @param {string} repo       - Repository name.
- * @param {string} number     - Issue number.
- * @param {string} action     - Action that triggered the event ('opened', 'reopened', 'labeled').
- * @param {object} eventLabel - Label that was added to the issue.
- * @return {Promise<Array>} Promise resolving to an array of Priority labels.
- */
-async function hasPriorityLabels( octokit, owner, repo, number, action, eventLabel ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	if ( 'labeled' === action && eventLabel.name && eventLabel.name.match( /^\[Pri\].*$/ ) ) {
-		labels.push( eventLabel.name );
-	}
-
-	return labels.filter( label => label.match( /^\[Pri\].*$/ ) && label !== '[Pri] TBD' );
-}
-
-module.exports = hasPriorityLabels;
-
-
-/***/ }),
-
 /***/ 2015:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -45164,14 +45160,27 @@ module.exports = formatSlackMessage;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const debug = __nccwpck_require__( 7197 );
-const hasEscalatedLabel = __nccwpck_require__( 92 );
-const hasPriorityLabels = __nccwpck_require__( 8975 );
-const isBug = __nccwpck_require__( 2015 );
-const findPriority = __nccwpck_require__( 3033 );
+const getLabels = __nccwpck_require__( 5479 );
 const formatSlackMessage = __nccwpck_require__( 3954 );
 const sendSlackMessage = __nccwpck_require__( 2146 );
 
 /* global GitHub, WebhookPayloadIssue */
+
+/**
+ * Check for a label showing that it was already escalated.
+ * The label name changes based on the team that was warned.
+ *
+ * @param {GitHub} octokit        - Initialized Octokit REST client.
+ * @param {string} owner          - Repository owner.
+ * @param {string} repo           - Repository name.
+ * @param {string} number         - Issue number.
+ * @param {string} escalatedLabel - Label used to escalate the issue.
+ * @return {Promise<boolean>} Promise resolving to boolean.
+ */
+async function hasEscalatedLabel( octokit, owner, repo, number, escalatedLabel ) {
+	const labels = await getLabels( octokit, owner, repo, number );
+	return labels.includes( escalatedLabel );
+}
 
 /**
  * Send a Slack Notification if the issue is important.
@@ -45179,61 +45188,47 @@ const sendSlackMessage = __nccwpck_require__( 2146 );
  * We define an important issue when meeting all of the following criteria:
  * - A bug (includes a "[Type] Bug" label, or a "[Type] Bug" label is added to the issue right now)
  * - The issue is still opened
- * - The issue is not escalated yet (no "[Status] Priority Review Triggered" label)
+ * - The issue is not escalated yet (no label indicating that it was previously escalated to that team)
  * - The issue is either a high priority or a blocker (inferred from the existing labels or from the issue body)
  * - The issue is not already set to another priority label (no "[Pri] High", "[Pri] BLOCKER", or "[Pri] TBD" label)
  *
- * @param {GitHub}              octokit - Initialized Octokit REST client.
- * @param {WebhookPayloadIssue} payload - Issue event payload.
- * @param {string}              channel - Slack channel ID to send the message to.
+ * @param {GitHub}              octokit    - Initialized Octokit REST client.
+ * @param {WebhookPayloadIssue} payload    - Issue event payload.
+ * @param {string}              channel    - Slack channel ID to send the message to.
+ * @param {string}              recipients - Name of the group getting the notification. Can be 'devs' (default) or 'product-ambassadors'.
  */
-async function notifyImportantIssues( octokit, payload, channel ) {
-	const { action, issue, label = {}, repository } = payload;
-	const { number, body, state } = issue;
-	const { owner, name } = repository;
-	const ownerLogin = owner.login;
+async function notifyImportantIssues( octokit, payload, channel, recipients = 'devs' ) {
+	const {
+		issue: { number },
+		repository: {
+			owner: { login: ownerLogin },
+			name,
+		},
+	} = payload;
 
-	const isBugIssue = await isBug( octokit, ownerLogin, name, number, action, label );
-	const isEscalated = await hasEscalatedLabel( octokit, ownerLogin, name, number, action, label );
-	const priorityLabels = await hasPriorityLabels(
-		octokit,
-		ownerLogin,
-		name,
-		number,
-		action,
-		label
-	);
-	const priority = findPriority( body );
+	const escalatedLabel =
+		recipients === 'devs'
+			? '[Status] Priority Review Triggered'
+			: '[Status] Escalated to Product Ambassadors';
 
-	const highPriorityIssue = priority === 'High' || priorityLabels.includes( '[Pri] High' );
-	const blockerIssue = priority === 'BLOCKER' || priorityLabels.includes( '[Pri] BLOCKER' );
+	const isEscalated = await hasEscalatedLabel( octokit, ownerLogin, name, number, escalatedLabel );
 
-	const hasOtherPriorityLabels = priorityLabels.some( priLabel =>
-		/^\[Pri\] (?!High|BLOCKER|TBD)/.test( priLabel )
-	);
-
-	if (
-		isBugIssue &&
-		state === 'open' &&
-		! isEscalated &&
-		( highPriorityIssue || blockerIssue ) &&
-		! hasOtherPriorityLabels
-	) {
-		const message = `New ${
-			highPriorityIssue ? 'High-priority' : 'Blocker'
-		} bug! Please check the priority.`;
+	if ( ! isEscalated ) {
+		const message = `New high-priority bug! Please check the priority.`;
 		const slackMessageFormat = formatSlackMessage( payload, channel, message );
 		await sendSlackMessage( message, channel, payload, slackMessageFormat );
 
 		debug(
-			`notify-important-issues: Adding a label to issue #${ number } to show that the triage team was warned.`
+			`notify-important-issues: Adding a label to issue #${ number } to show that ${ recipients } were warned.`
 		);
 		await octokit.rest.issues.addLabels( {
 			owner: ownerLogin,
 			repo: name,
 			issue_number: number,
-			labels: [ '[Status] Priority Review Triggered' ],
+			labels: [ escalatedLabel ],
 		} );
+	} else {
+		debug( `notify-important-issues: ${ recipients } have already been warned about ${ number }.` );
 	}
 }
 
@@ -62910,18 +62905,12 @@ const notifyDesign = __nccwpck_require__( 3178 );
 const notifyEditorial = __nccwpck_require__( 4564 );
 const replyToCustomersReminder = __nccwpck_require__( 3427 );
 const triageIssues = __nccwpck_require__( 1966 );
-const updateBoard = __nccwpck_require__( 301 );
 const wpcomCommitReminder = __nccwpck_require__( 6410 );
 const debug = __nccwpck_require__( 7197 );
 const ifNotClosed = __nccwpck_require__( 4463 );
 const ifNotFork = __nccwpck_require__( 9302 );
 
 const automations = [
-	{
-		event: 'issues',
-		action: [ 'labeled', 'opened' ],
-		task: updateBoard,
-	},
 	{
 		event: 'pull_request_target',
 		action: [ 'opened', 'synchronize', 'edited' ],
