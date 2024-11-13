@@ -20,6 +20,9 @@ This is an alpha version! The changes listed here are not final.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
 - Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
 
+### Fixed
+- Auto-labeling: do not add a "Docs" label when a changelog.md file is modified on the root of the repo.
+
 ## [5.1.0] - 2024-08-29
 ### Added
 - Auto-labeling: label changes to the WooCommerce Analytics package. [#36281]
