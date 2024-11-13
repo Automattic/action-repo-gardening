@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Issue triage: allow querying OpenAI to get a list of labels that could potentially be added to an issue, based off the issue body, when the issue is opened.
 
 ### Changed
+- AI Labeling: update conditions when labeling is triggered.
 - Board Triage: remove updateBoard task. It will now be part of the existing triageIssues task.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Issue escalation: allow escalating the issue to multiple teams.
