@@ -44303,129 +44303,6 @@ module.exports = updateBoard;
 
 /***/ }),
 
-/***/ 6410:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const debug = __nccwpck_require__( 7197 );
-const getAssociatedPullRequest = __nccwpck_require__( 2509 );
-const getComments = __nccwpck_require__( 5717 );
-
-/* global GitHub, WebhookPayloadPush */
-
-/**
- * Search for a previous comment from this task in our PR.
- * If we find one, return its body.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @return {Promise<string>} Promise resolving to a string.
- */
-async function getMatticBotComment( octokit, owner, repo, number ) {
-	let commentBody = '';
-
-	debug( `wpcom-commit-reminder: Looking for a comment from Matticbot on this PR.` );
-
-	const comments = await getComments( octokit, owner.login, repo, number );
-	for ( const comment of comments ) {
-		if (
-			comment.user.login === 'matticbot' &&
-			comment.body.includes( 'This PR has changes that must be merged to WordPress.com' )
-		) {
-			commentBody = comment.body;
-		}
-	}
-
-	return commentBody;
-}
-
-/**
- * Search for a previous comment from this task in our PR.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @return {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasReminderComment( octokit, owner, repo, number ) {
-	debug( `wpcom-commit-reminder: Looking for a previous comment from this task in our PR.` );
-
-	const comments = await getComments( octokit, owner.login, repo, number );
-	for ( const comment of comments ) {
-		if (
-			comment.user.login === 'github-actions[bot]' &&
-			comment.body.includes( 'Great news! One last step' )
-		) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
- * Checks the contents of a PR description.
- *
- * @param {WebhookPayloadPush} payload - Push event payload.
- * @param {GitHub}             octokit - Initialized Octokit REST client.
- */
-async function wpcomCommitReminder( payload, octokit ) {
-	const { commits, ref, repository } = payload;
-	const { name: repo, owner } = repository;
-
-	// We should not get to that point as the action is triggered on pushes to trunk, but...
-	if ( ref !== 'refs/heads/trunk' ) {
-		debug( 'wpcom-commit-reminder: Commit is not to `trunk`. Aborting' );
-		return;
-	}
-
-	const prNumber = getAssociatedPullRequest( commits[ 0 ] );
-	if ( ! prNumber ) {
-		debug( 'wpcom-commit-reminder: Commit is not a squashed PR. Aborting' );
-		return;
-	}
-
-	// Look for an existing check-description task comment.
-	const matticBotComment = await getMatticBotComment( octokit, owner, repo, prNumber );
-
-	// get diff id from comment body above.
-	const diffId = matticBotComment.match( /(D\d{5}-code)/ );
-
-	if ( ! diffId || 0 === diffId.length ) {
-		debug( 'wpcom-commit-reminder: We could not find a diff ID. Aborting' );
-		return;
-	}
-	// Build our comment body.
-	const comment = `
-Great news! One last step: head over to your WordPress.com diff, ${ diffId[ 0 ] }, and deploy it.
-Once you've done so, come back to this PR and add a comment with your SVN changeset ID (e.g. \`r12345-wpcom\`).
-
-**Thank you!**
-	`;
-
-	// Look for an existing reminder comment.
-	const hasComment = await hasReminderComment( octokit, owner, repo, prNumber );
-
-	// If there is no comment yet, go ahead and comment.
-	if ( ! hasComment ) {
-		debug( `wpcom-commit-reminder: Posting comment to PR #${ prNumber }` );
-
-		await octokit.rest.issues.createComment( {
-			owner: owner.login,
-			repo,
-			issue_number: +prNumber,
-			body: comment,
-		} );
-	}
-}
-
-module.exports = wpcomCommitReminder;
-
-
-/***/ }),
-
 /***/ 7197:
 /***/ ((module) => {
 
@@ -62968,7 +62845,6 @@ const notifyDesign = __nccwpck_require__( 3178 );
 const notifyEditorial = __nccwpck_require__( 4564 );
 const replyToCustomersReminder = __nccwpck_require__( 3427 );
 const triageIssues = __nccwpck_require__( 1966 );
-const wpcomCommitReminder = __nccwpck_require__( 6410 );
 const debug = __nccwpck_require__( 7197 );
 const ifNotClosed = __nccwpck_require__( 4463 );
 const ifNotFork = __nccwpck_require__( 9302 );
@@ -63013,10 +62889,6 @@ const automations = [
 		event: 'pull_request_target',
 		action: [ 'labeled' ],
 		task: ifNotClosed( notifyEditorial ),
-	},
-	{
-		event: 'push',
-		task: wpcomCommitReminder,
 	},
 	{
 		event: 'pull_request_target',

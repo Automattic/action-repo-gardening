@@ -21,6 +21,9 @@ This is an alpha version! The changes listed here are not final.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
 - Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
 
+### Removed
+- WordPress.com Commit Reminder: remove this task as it is no longer used in the Jetpack monorepo.
+
 ### Fixed
 - Auto-labeling: do not add a "Docs" label when a changelog.md file is modified on the root of the repo.
 
@@ -51,7 +54,7 @@ This is an alpha version! The changes listed here are not final.
 - Boost: Fix [Boost Feature] labels [#35947]
 - Check description task: Handle empty PR body. [#36446]
 - Repo Gardening: fix workflow for adding [OSS Citizen] label. [#37252]
-- WPCOM Commit Reminder rask: Fix detection of existing reminder comment. [#39042]
+- WPCOM Commit Reminder task: Fix detection of existing reminder comment. [#39042]
 
 ## [5.0.0] - 2024-02-07
 ### Added
