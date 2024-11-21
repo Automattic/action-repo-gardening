@@ -27,6 +27,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Fixed
 - Auto-labeling: do not add a "Docs" label when a changelog.md file is modified on the root of the repo.
+- Board triage: do not attempt to modify board columns when the issue is not on a board.
 
 ## [5.1.0] - 2024-08-29
 ### Added
