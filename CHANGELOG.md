@@ -21,6 +21,7 @@ This is an alpha version! The changes listed here are not final.
 - Board Triage: remove updateBoard task. It will now be part of the existing triageIssues task.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Issue escalation: allow escalating the issue to multiple teams.
+- Labels: automatically label all changes to the Publicize feature.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
 - Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
 
