@@ -12,6 +12,7 @@ This is an alpha version! The changes listed here are not final.
 ### Added
 - Board Triage: automatically add the issue type to our project board when a Type label can be found in the issue.
 - Issue triage: allow querying OpenAI to get a list of labels that could potentially be added to an issue, based off the issue body, when the issue is opened.
+- Issue triage: post a comment when an issue lacks labels.
 - Labeling: automatically label changes to Social Previews made in the js package.
 
 ### Changed

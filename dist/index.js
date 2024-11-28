@@ -43101,6 +43101,8 @@ function cleanIssueContent( content ) {
  *
  * @param {WebhookPayloadIssue} payload - Issue event payload.
  * @param {GitHub}              octokit - Initialized Octokit REST client.
+ *
+ * @return {Promise<Array>} Promise resolving to an array of all the labels on the issue after the task is over.
  */
 async function aiLabeling( payload, octokit ) {
 	const { issue, repository } = payload;
@@ -43113,7 +43115,7 @@ async function aiLabeling( payload, octokit ) {
 
 	if ( ! apiKey ) {
 		debug( `triage-issues > auto-label: No OpenAI key is provided. Bail.` );
-		return;
+		return issueLabels;
 	}
 
 	// If the issue already has [Feature] or [Feature Group] labels, bail.
@@ -43121,7 +43123,7 @@ async function aiLabeling( payload, octokit ) {
 		debug(
 			`triage-issues > auto-label: Issue #${ number } already has [Feature] or [Feature Group] labels. Skipping.`
 		);
-		return;
+		return issueLabels;
 	}
 
 	if (
@@ -43135,7 +43137,7 @@ async function aiLabeling( payload, octokit ) {
 			debug(
 				`triage-issues > auto-label: Issue #${ number } doesn't have enough content. Skipping OpenAI analysis.`
 			);
-			return;
+			return issueLabels;
 		}
 
 		debug(
@@ -43185,8 +43187,13 @@ ${ Object.entries( explanations )
 				issue_number: number,
 				labels: [ '[Experiment] AI labels added' ],
 			} );
+
+			// Add the labels we've added to our existing array of labels.
+			issueLabels.push( ...labels, '[Experiment] AI labels added' );
 		}
 	}
+
+	return issueLabels;
 }
 module.exports = aiLabeling;
 
@@ -43483,6 +43490,50 @@ const updateBoard = __nccwpck_require__( 5756 );
 /* global GitHub, WebhookPayloadIssue */
 
 /**
+ * If we could not add labels via OpenAI, let's add a comment to ask the issue author to add their own labels.
+ *
+ * We only want to do this if the author can actually add labels to the issue, i.e. if they're part of the organization.
+ *
+ * @param {GitHub} octokit     - Initialized Octokit REST client.
+ * @param {string} ownerLogin  - Owner of the repository.
+ * @param {string} authorLogin - Author of the issue.
+ * @param {string} repo        - Repository name.
+ * @param {number} issueNumber - Issue number.
+ *
+ * @return {Promise<void>} Promise resolving when the comment is added.
+ */
+async function addCommentAskLabels( octokit, ownerLogin, authorLogin, repo, issueNumber ) {
+	debug(
+		`triage-issues > auto-label: Issue #${ issueNumber } created by ${ authorLogin }, lacking label suggestions by OpenAI. Asking the author to add labels.`
+	);
+
+	// Check if issue author is org member
+	// Result is communicated by status code, and non-successful status codes throw.
+	// https://docs.github.com/en/rest/orgs/members?apiVersion=2022-11-28#check-organization-membership-for-a-user
+	try {
+		await octokit.rest.orgs.checkMembershipForUser( {
+			org: ownerLogin,
+			username: authorLogin,
+		} );
+	} catch ( error ) {
+		debug(
+			`triage-issues > auto-label: Author ${ authorLogin } is not an org member. Skipping comment.`
+		);
+		return;
+	}
+
+	const commentBody = `It looks like you didn't add any labels to this issue. Could you please add a \`[Type]\`, a \`[Feature]\`, and a \`[Pri]\` label? Those labels will help us categorize and monitor activity in this repository.
+`;
+
+	await octokit.rest.issues.createComment( {
+		owner: ownerLogin,
+		repo,
+		body: commentBody,
+		issue_number: issueNumber,
+	} );
+}
+
+/**
  * Automatically add labels to issues, and send Slack notifications.
  *
  * This task can send 2 different types of Slack notifications:
@@ -43494,7 +43545,12 @@ const updateBoard = __nccwpck_require__( 5756 );
  */
 async function triageIssues( payload, octokit ) {
 	const { action, issue, repository } = payload;
-	const { number, body, state } = issue;
+	const {
+		user: { login: authorLogin },
+		number,
+		body,
+		state,
+	} = issue;
 	const { owner, name, full_name } = repository;
 	const ownerLogin = owner.login;
 
@@ -43570,7 +43626,17 @@ async function triageIssues( payload, octokit ) {
 		}
 
 		// Use OpenAI to automatically add labels to issues.
-		await aiLabeling( payload, octokit );
+		const issueLabels = await aiLabeling( payload, octokit );
+
+		// At this point, if we still miss a [Type] label, a [Feature] label, or a [Pri] label, ask the author to add it.
+		const requiredLabelTypes = [ '[Type]', '[Feature', '[Pri]' ];
+		const missingLabelTypes = requiredLabelTypes.filter(
+			requiredLabelType => ! issueLabels.some( label => label.startsWith( requiredLabelType ) )
+		);
+
+		if ( missingLabelTypes.length > 0 ) {
+			await addCommentAskLabels( octokit, ownerLogin, authorLogin, name, number );
+		}
 	}
 
 	// Triage the issue to a Project board if necessary and possible.
