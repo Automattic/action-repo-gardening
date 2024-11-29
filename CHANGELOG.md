@@ -23,6 +23,7 @@ This is an alpha version! The changes listed here are not final.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Issue escalation: allow escalating the issue to multiple teams.
 - Labels: automatically label all changes to the Publicize feature.
+- Prompt for labels: update wording.
 - Slack messaging: when a Slack message cannot be sent to a specific channel, send a message to warn about the issue.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
 - Triage to Project boards: automatically triage Site Migrations and Theme-related issues.
