@@ -23,6 +23,7 @@ This is an alpha version! The changes listed here are not final.
 - Board Triage: remove updateBoard task. It will now be part of the existing triageIssues task.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Issue escalation: allow escalating the issue to multiple teams.
+- Labeling: automatically label changes to the External Media extension.
 - Labels: automatically label all changes to the Publicize feature.
 - Prompt for labels: update wording.
 - Slack messaging: when a Slack message cannot be sent to a specific channel, send a message to warn about the issue.
