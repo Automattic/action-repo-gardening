@@ -48887,21 +48887,6 @@ const getLabels = __nccwpck_require__( 5479 );
 /* global GitHub, WebhookPayloadPullRequest */
 
 /**
- * Check for status labels on a PR.
- *
- * @param {GitHub} octokit - Initialized Octokit REST client.
- * @param {string} owner   - Repository owner.
- * @param {string} repo    - Repository name.
- * @param {string} number  - PR number.
- * @return {Promise<boolean>} Promise resolving to boolean.
- */
-async function hasStatusLabels( octokit, owner, repo, number ) {
-	const labels = await getLabels( octokit, owner, repo, number );
-	// We're only interested in status labels, but not the "Needs Reply" label since it can be added by the action.
-	return !! labels.find( label => label.match( /^\[Status\].*(?<!Author Reply)$/ ) );
-}
-
-/**
  * Check for a "Need Review" label on a PR.
  *
  * @param {GitHub} octokit - Initialized Octokit REST client.
@@ -49129,15 +49114,30 @@ async function getStatusChecks( payload, octokit ) {
 	const ownerLogin = owner.login;
 
 	const hasLongDescription = body?.length > 200;
-	const isLabeled = await hasStatusLabels( octokit, ownerLogin, repo, number );
 	const hasTesting = !! body?.includes( 'Testing instructions' );
 	const hasPrivacy = !! body?.includes( 'data or activity we track or use' );
 	const projectsWithoutChangelog = await getChangelogEntries( octokit, ownerLogin, repo, number );
 	const isFromContributor = head.repo.full_name === base.repo.full_name;
 
+	const prLabels = await getLabels( octokit, ownerLogin, repo, number );
+	const { hasStatusLabels, hasTypeLabels } = prLabels.reduce(
+		( acc, label ) => {
+			// We're only interested in status labels, but not the "Needs Reply" label since it can be added by the action.
+			if ( label.match( /^\[Status\].*(?<!Author Reply)$/ ) ) {
+				acc.hasStatusLabels = true;
+			}
+			if ( label.match( /^\[Type\]/ ) ) {
+				acc.hasTypeLabels = true;
+			}
+			return acc;
+		},
+		{ hasStatusLabels: false, hasTypeLabels: false }
+	);
+
 	return {
 		hasLongDescription,
-		isLabeled,
+		hasStatusLabels,
+		hasTypeLabels,
 		hasTesting,
 		hasPrivacy,
 		projectsWithoutChangelog,
@@ -49162,10 +49162,20 @@ function renderStatusChecks( statusChecks ) {
 	// Use labels please!
 	// Only check this for PRs created by a12s. External contributors cannot add labels.
 	if ( statusChecks.isFromContributor ) {
-		debug( `check-description: this PR is correctly labeled: ${ statusChecks.isLabeled }` );
+		debug( `check-description: this PR has a Status label: ${ statusChecks.hasStatusLabels }` );
 		checks += statusEntry(
-			! statusChecks.isLabeled,
+			! statusChecks.hasStatusLabels,
 			'Add a "[Status]" label (In Progress, Needs Team Review, ...).'
+		);
+	}
+
+	// Add a [Type] label please.
+	// Only check this for PRs created by a12s. External contributors cannot add labels.
+	if ( statusChecks.isFromContributor ) {
+		debug( `check-description: this PR has a Type label: ${ statusChecks.hasTypeLabels }` );
+		checks += statusEntry(
+			! statusChecks.hasTypeLabels,
+			'Add a "[Type]" label (Bug, Enhancement, Janitorial, Task).'
 		);
 	}
 
@@ -50738,6 +50748,18 @@ const automatticAssignments = {
 		],
 		slack_id: 'C048CUFRGFQ',
 		board_id: 'https://github.com/orgs/Automattic/projects/1106/',
+	},
+	ActivityPub: {
+		team: 'Fediverse',
+		labels: [
+			'[Feature] Federated comments',
+			'[Block] Federated reply',
+			'[Block] Follow Me',
+			'[Block] Followers',
+			'[Block] Post settings',
+			'[Block] Remote Reply',
+		],
+		board_id: 'https://github.com/orgs/Automattic/projects/1208/',
 	},
 	// Jetpack Division.
 	'AI Tools': {
