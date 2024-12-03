@@ -25,6 +25,7 @@ This is an alpha version! The changes listed here are not final.
 - Issue escalation: allow escalating the issue to multiple teams.
 - Labeling: automatically label changes to the External Media extension.
 - Labels: automatically label all changes to the Publicize feature.
+- Prompt for labels: update conditions to include "[<plugin> Feature]" labels.
 - Prompt for labels: update wording.
 - Slack messaging: when a Slack message cannot be sent to a specific channel, send a message to warn about the issue.
 - Triage to Project boards: automatically triage Autoloader-related issues to the Garage board.
