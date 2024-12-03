@@ -16,10 +16,12 @@ This is an alpha version! The changes listed here are not final.
 - Labeling: automatically label changes to Social Previews made in the js package.
 
 ### Changed
+- AI Labeling: allow plugin-specific feature labels as well.
 - AI Labeling: clean up issue contents before we send them to OpenAI for analysis.
 - AI Labeling: do not attempt to add feature labels to an issue where they were already provided
 - AI Labeling: update conditions when labeling is triggered.
 - Board triage: add automated triage for Photon.
+- Board triage: add automatic triage to Fediverse project board.
 - Board Triage: remove updateBoard task. It will now be part of the existing triageIssues task.
 - Check description task: Update timing for Jetpack, wpcomsh, and mu-wpcom-plugin releases.
 - Issue escalation: allow escalating the issue to multiple teams.
