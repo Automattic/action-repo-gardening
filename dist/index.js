@@ -11098,122 +11098,224 @@ CombinedStream.prototype._emitError = function(err) {
 
 /***/ }),
 
-/***/ 8020:
-/***/ (function(module) {
+/***/ 5701:
+/***/ (function(__unused_webpack_module, exports) {
 
-/* global define */
-(function (root, factory) {
-  /* istanbul ignore next */
-  if (typeof define === 'function' && define.amd) {
-    define([], factory);
-  } else if (true) {
-    module.exports = factory();
-  } else {}
-}(this, function () {
+(function (global, factory) {
+     true ? factory(exports) :
+    0;
+})(this, (function (exports) { 'use strict';
 
-  var semver = /^v?(?:\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+))?(?:-[\da-z\-]+(?:\.[\da-z\-]+)*)?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+    const semver = /^[v^~<>=]*?(\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+)(?:\.([x*]|\d+))?(?:-([\da-z\-]+(?:\.[\da-z\-]+)*))?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+    const validateAndParse = (version) => {
+        if (typeof version !== 'string') {
+            throw new TypeError('Invalid argument expected string');
+        }
+        const match = version.match(semver);
+        if (!match) {
+            throw new Error(`Invalid argument not valid semver ('${version}' received)`);
+        }
+        match.shift();
+        return match;
+    };
+    const isWildcard = (s) => s === '*' || s === 'x' || s === 'X';
+    const tryParse = (v) => {
+        const n = parseInt(v, 10);
+        return isNaN(n) ? v : n;
+    };
+    const forceType = (a, b) => typeof a !== typeof b ? [String(a), String(b)] : [a, b];
+    const compareStrings = (a, b) => {
+        if (isWildcard(a) || isWildcard(b))
+            return 0;
+        const [ap, bp] = forceType(tryParse(a), tryParse(b));
+        if (ap > bp)
+            return 1;
+        if (ap < bp)
+            return -1;
+        return 0;
+    };
+    const compareSegments = (a, b) => {
+        for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            const r = compareStrings(a[i] || '0', b[i] || '0');
+            if (r !== 0)
+                return r;
+        }
+        return 0;
+    };
 
-  function indexOrEnd(str, q) {
-    return str.indexOf(q) === -1 ? str.length : str.indexOf(q);
-  }
+    /**
+     * Compare [semver](https://semver.org/) version strings to find greater, equal or lesser.
+     * This library supports the full semver specification, including comparing versions with different number of digits like `1.0.0`, `1.0`, `1`, and pre-release versions like `1.0.0-alpha`.
+     * @param v1 - First version to compare
+     * @param v2 - Second version to compare
+     * @returns Numeric value compatible with the [Array.sort(fn) interface](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Parameters).
+     */
+    const compareVersions = (v1, v2) => {
+        // validate input and split into segments
+        const n1 = validateAndParse(v1);
+        const n2 = validateAndParse(v2);
+        // pop off the patch
+        const p1 = n1.pop();
+        const p2 = n2.pop();
+        // validate numbers
+        const r = compareSegments(n1, n2);
+        if (r !== 0)
+            return r;
+        // validate pre-release
+        if (p1 && p2) {
+            return compareSegments(p1.split('.'), p2.split('.'));
+        }
+        else if (p1 || p2) {
+            return p1 ? -1 : 1;
+        }
+        return 0;
+    };
 
-  function split(v) {
-    var c = v.replace(/^v/, '').replace(/\+.*$/, '');
-    var patchIndex = indexOrEnd(c, '-');
-    var arr = c.substring(0, patchIndex).split('.');
-    arr.push(c.substring(patchIndex + 1));
-    return arr;
-  }
+    /**
+     * Compare [semver](https://semver.org/) version strings using the specified operator.
+     *
+     * @param v1 First version to compare
+     * @param v2 Second version to compare
+     * @param operator Allowed arithmetic operator to use
+     * @returns `true` if the comparison between the firstVersion and the secondVersion satisfies the operator, `false` otherwise.
+     *
+     * @example
+     * ```
+     * compare('10.1.8', '10.0.4', '>'); // return true
+     * compare('10.0.1', '10.0.1', '='); // return true
+     * compare('10.1.1', '10.2.2', '<'); // return true
+     * compare('10.1.1', '10.2.2', '<='); // return true
+     * compare('10.1.1', '10.2.2', '>='); // return false
+     * ```
+     */
+    const compare = (v1, v2, operator) => {
+        // validate input operator
+        assertValidOperator(operator);
+        // since result of compareVersions can only be -1 or 0 or 1
+        // a simple map can be used to replace switch
+        const res = compareVersions(v1, v2);
+        return operatorResMap[operator].includes(res);
+    };
+    const operatorResMap = {
+        '>': [1],
+        '>=': [0, 1],
+        '=': [0],
+        '<=': [-1, 0],
+        '<': [-1],
+        '!=': [-1, 1],
+    };
+    const allowedOperators = Object.keys(operatorResMap);
+    const assertValidOperator = (op) => {
+        if (typeof op !== 'string') {
+            throw new TypeError(`Invalid operator type, expected string but got ${typeof op}`);
+        }
+        if (allowedOperators.indexOf(op) === -1) {
+            throw new Error(`Invalid operator, expected one of ${allowedOperators.join('|')}`);
+        }
+    };
 
-  function tryParse(v) {
-    return isNaN(Number(v)) ? v : Number(v);
-  }
+    /**
+     * Match [npm semver](https://docs.npmjs.com/cli/v6/using-npm/semver) version range.
+     *
+     * @param version Version number to match
+     * @param range Range pattern for version
+     * @returns `true` if the version number is within the range, `false` otherwise.
+     *
+     * @example
+     * ```
+     * satisfies('1.1.0', '^1.0.0'); // return true
+     * satisfies('1.1.0', '~1.0.0'); // return false
+     * ```
+     */
+    const satisfies = (version, range) => {
+        // clean input
+        range = range.replace(/([><=]+)\s+/g, '$1');
+        // handle multiple comparators
+        if (range.includes('||')) {
+            return range.split('||').some((r) => satisfies(version, r));
+        }
+        else if (range.includes(' - ')) {
+            const [a, b] = range.split(' - ', 2);
+            return satisfies(version, `>=${a} <=${b}`);
+        }
+        else if (range.includes(' ')) {
+            return range
+                .trim()
+                .replace(/\s{2,}/g, ' ')
+                .split(' ')
+                .every((r) => satisfies(version, r));
+        }
+        // if no range operator then "="
+        const m = range.match(/^([<>=~^]+)/);
+        const op = m ? m[1] : '=';
+        // if gt/lt/eq then operator compare
+        if (op !== '^' && op !== '~')
+            return compare(version, range, op);
+        // else range of either "~" or "^" is assumed
+        const [v1, v2, v3, , vp] = validateAndParse(version);
+        const [r1, r2, r3, , rp] = validateAndParse(range);
+        const v = [v1, v2, v3];
+        const r = [r1, r2 !== null && r2 !== void 0 ? r2 : 'x', r3 !== null && r3 !== void 0 ? r3 : 'x'];
+        // validate pre-release
+        if (rp) {
+            if (!vp)
+                return false;
+            if (compareSegments(v, r) !== 0)
+                return false;
+            if (compareSegments(vp.split('.'), rp.split('.')) === -1)
+                return false;
+        }
+        // first non-zero number
+        const nonZero = r.findIndex((v) => v !== '0') + 1;
+        // pointer to where segments can be >=
+        const i = op === '~' ? 2 : nonZero > 1 ? nonZero : 1;
+        // before pointer must be equal
+        if (compareSegments(v.slice(0, i), r.slice(0, i)) !== 0)
+            return false;
+        // after pointer must be >=
+        if (compareSegments(v.slice(i), r.slice(i)) === -1)
+            return false;
+        return true;
+    };
 
-  function validate(version) {
-    if (typeof version !== 'string') {
-      throw new TypeError('Invalid argument expected string');
-    }
-    if (!semver.test(version)) {
-      throw new Error('Invalid argument not valid semver (\''+version+'\' received)');
-    }
-  }
+    /**
+     * Validate [semver](https://semver.org/) version strings.
+     *
+     * @param version Version number to validate
+     * @returns `true` if the version number is a valid semver version number, `false` otherwise.
+     *
+     * @example
+     * ```
+     * validate('1.0.0-rc.1'); // return true
+     * validate('1.0-rc.1'); // return false
+     * validate('foo'); // return false
+     * ```
+     */
+    const validate = (version) => typeof version === 'string' && /^[v\d]/.test(version) && semver.test(version);
+    /**
+     * Validate [semver](https://semver.org/) version strings strictly. Will not accept wildcards and version ranges.
+     *
+     * @param version Version number to validate
+     * @returns `true` if the version number is a valid semver version number `false` otherwise
+     *
+     * @example
+     * ```
+     * validate('1.0.0-rc.1'); // return true
+     * validate('1.0-rc.1'); // return false
+     * validate('foo'); // return false
+     * ```
+     */
+    const validateStrict = (version) => typeof version === 'string' &&
+        /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/.test(version);
 
-  function compareVersions(v1, v2) {
-    [v1, v2].forEach(validate);
+    exports.compare = compare;
+    exports.compareVersions = compareVersions;
+    exports.satisfies = satisfies;
+    exports.validate = validate;
+    exports.validateStrict = validateStrict;
 
-    var s1 = split(v1);
-    var s2 = split(v2);
-
-    for (var i = 0; i < Math.max(s1.length - 1, s2.length - 1); i++) {
-      var n1 = parseInt(s1[i] || 0, 10);
-      var n2 = parseInt(s2[i] || 0, 10);
-
-      if (n1 > n2) return 1;
-      if (n2 > n1) return -1;
-    }
-
-    var sp1 = s1[s1.length - 1];
-    var sp2 = s2[s2.length - 1];
-
-    if (sp1 && sp2) {
-      var p1 = sp1.split('.').map(tryParse);
-      var p2 = sp2.split('.').map(tryParse);
-
-      for (i = 0; i < Math.max(p1.length, p2.length); i++) {
-        if (p1[i] === undefined || typeof p2[i] === 'string' && typeof p1[i] === 'number') return -1;
-        if (p2[i] === undefined || typeof p1[i] === 'string' && typeof p2[i] === 'number') return 1;
-
-        if (p1[i] > p2[i]) return 1;
-        if (p2[i] > p1[i]) return -1;
-      }
-    } else if (sp1 || sp2) {
-      return sp1 ? -1 : 1;
-    }
-
-    return 0;
-  };
-
-  var allowedOperators = [
-    '>',
-    '>=',
-    '=',
-    '<',
-    '<='
-  ];
-
-  var operatorResMap = {
-    '>': [1],
-    '>=': [0, 1],
-    '=': [0],
-    '<=': [-1, 0],
-    '<': [-1]
-  };
-
-  function validateOperator(op) {
-    if (typeof op !== 'string') {
-      throw new TypeError('Invalid operator type, expected string but got ' + typeof op);
-    }
-    if (allowedOperators.indexOf(op) === -1) {
-      throw new TypeError('Invalid operator, expected one of ' + allowedOperators.join('|'));
-    }
-  }
-
-  compareVersions.validate = function(version) {
-    return typeof version === 'string' && semver.test(version);
-  }
-
-  compareVersions.compare = function (v1, v2, operator) {
-    // Validate operator
-    validateOperator(operator);
-
-    // since result of compareVersions can only be -1 or 0 or 1
-    // a simple map can be used to replace switch
-    var res = compareVersions(v1, v2);
-    return operatorResMap[operator].indexOf(res) > -1;
-  }
-
-  return compareVersions;
 }));
+//# sourceMappingURL=index.js.map
 
 
 /***/ }),
@@ -52213,7 +52315,7 @@ module.exports = getFiles;
 /***/ 1006:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const compareVersions = __nccwpck_require__( 8020 );
+const compareVersions = __nccwpck_require__( 5701 );
 const moment = __nccwpck_require__( 8071 );
 
 /* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
