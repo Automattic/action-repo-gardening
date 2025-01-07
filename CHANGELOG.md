@@ -19,6 +19,9 @@ This is an alpha version! The changes listed here are not final.
 - Support references: stop gathering p2 comments in list of support references.
 - Updated package dependencies.
 
+### Fixed
+- Ensure use of named export for compare-versions.
+
 ## [6.0.0] - 2024-12-04
 ### Added
 - Board Triage: automatically add the issue type to our project board when a Type label can be found in the issue. [#40110]

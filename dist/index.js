@@ -52318,7 +52318,7 @@ module.exports = getFiles;
 /***/ 1006:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const compareVersions = __nccwpck_require__( 5701 );
+const { compareVersions } = __nccwpck_require__( 5701 );
 const moment = __nccwpck_require__( 8496 );
 
 /* global GitHub, OktokitIssuesListMilestonesForRepoResponseItem */
