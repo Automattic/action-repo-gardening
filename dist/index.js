@@ -49985,7 +49985,11 @@ async function addOrUpdateInteractionCountLabel(
 	number,
 	issueReferencesCount
 ) {
-	const ranges = [ 50, 20, 10 ];
+	let ranges = [ 50, 20, 10 ];
+
+	if ( 'Automattic/sensei' === repo ) {
+		ranges = [ 5 ];
+	}
 
 	// Check if our issue has issues in one of the ranges where we want to label it.
 	const issueRange = ranges.find( range => issueReferencesCount > range );
