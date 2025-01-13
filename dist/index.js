@@ -9477,20 +9477,22 @@ module.exports.AbortSignal = AbortSignal
 
 /***/ }),
 
-/***/ 8292:
+/***/ 3707:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-module.exports = __nccwpck_require__(7682);
-module.exports.HttpsAgent = __nccwpck_require__(1323);
-module.exports.constants = __nccwpck_require__(8413);
+const HttpAgent = __nccwpck_require__(5024);
+module.exports = HttpAgent;
+module.exports.HttpAgent = HttpAgent;
+module.exports.HttpsAgent = __nccwpck_require__(7344);
+module.exports.constants = __nccwpck_require__(4518);
 
 
 /***/ }),
 
-/***/ 7682:
+/***/ 5024:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -9507,7 +9509,7 @@ const {
   SOCKET_NAME,
   SOCKET_REQUEST_COUNT,
   SOCKET_REQUEST_FINISHED_COUNT,
-} = __nccwpck_require__(8413);
+} = __nccwpck_require__(4518);
 
 // OriginalAgent come from
 // - https://github.com/nodejs/node/blob/v8.12.0/lib/_http_agent.js
@@ -9900,7 +9902,7 @@ function inspect(obj) {
 
 /***/ }),
 
-/***/ 8413:
+/***/ 4518:
 /***/ ((module) => {
 
 "use strict";
@@ -9922,18 +9924,18 @@ module.exports = {
 
 /***/ }),
 
-/***/ 1323:
+/***/ 7344:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 const OriginalHttpsAgent = (__nccwpck_require__(5687).Agent);
-const HttpAgent = __nccwpck_require__(7682);
+const HttpAgent = __nccwpck_require__(5024);
 const {
   INIT_SOCKET,
   CREATE_HTTPS_CONNECTION,
-} = __nccwpck_require__(8413);
+} = __nccwpck_require__(4518);
 
 class HttpsAgent extends HttpAgent {
   constructor(options) {
@@ -62014,7 +62016,7 @@ exports.getRuntime = void 0;
  */
 const nf = __importStar(__nccwpck_require__(7501));
 const fd = __importStar(__nccwpck_require__(956));
-const agentkeepalive_1 = __importDefault(__nccwpck_require__(8292));
+const agentkeepalive_1 = __importDefault(__nccwpck_require__(3707));
 const abort_controller_1 = __nccwpck_require__(9832);
 const node_fs_1 = __nccwpck_require__(7561);
 const form_data_encoder_1 = __nccwpck_require__(4604);
