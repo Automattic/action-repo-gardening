@@ -17,6 +17,7 @@ This is an alpha version! The changes listed here are not final.
 - AI Labeling: allow plugin-specific feature labels as well.
 - Board triage: add automatic triage to Fediverse project board.
 - Prompt for labels: update conditions to include "[<plugin> Feature]" labels.
+- Support References: send Slack message when an issue is labeled as customer report.
 - Support references: stop gathering p2 comments in list of support references.
 - Updated package dependencies.
 
