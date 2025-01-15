@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.1-alpha] - unreleased
+## [7.0.0-alpha] - unreleased
 
 This is an alpha version! The changes listed here are not final.
 
@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - AI Labeling: allow plugin-specific feature labels as well.
 - Board triage: add automatic triage to Fediverse project board.
+- Issue triage: update priority matrix.
 - Prompt for labels: update conditions to include "[<plugin> Feature]" labels.
 - Support References: send Slack message when an issue is labeled as customer report.
 - Support references: stop gathering p2 comments in list of support references.
@@ -291,7 +292,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[6.0.1-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v6.0.0...v6.0.1-alpha
+[7.0.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v6.0.0...v7.0.0-alpha
 [6.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.1.0...v6.0.0
 [5.1.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.1.0
 [5.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v4.0.0...v5.0.0
