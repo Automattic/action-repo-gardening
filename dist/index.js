@@ -49877,10 +49877,6 @@ function formatSlackMessage( payload, channel, message ) {
 		case 'Automattic/jetpack':
 			dris = '@jetpack-da';
 			break;
-		case 'Automattic/zero-bs-crm':
-		case 'Automattic/sensei':
-			dris = '@heysatellite';
-			break;
 		case 'Automattic/WP-Job-Manager':
 		case 'Automattic/Crowdsignal':
 			dris = '@meteorite-team';
@@ -50519,10 +50515,7 @@ function formatSlackMessage( payload, channel, message ) {
 		case 'Automattic/jetpack':
 			dris = '@jetpack-da';
 			break;
-		case 'Automattic/zero-bs-crm':
 		case 'Automattic/sensei':
-			dris = '@heysatellite';
-			break;
 		case 'Automattic/WP-Job-Manager':
 		case 'Automattic/Crowdsignal':
 			dris = '@meteorite-team';
