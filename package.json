@@ -1,6 +1,5 @@
 {
-	"name": "repo-gardening",
-	"version": "7.0.0-alpha",
+	"private": "true",
 	"description": "Manage Pull Requests and issues in your Open Source project (automate labelling, milestones, feedback to PR authors, ...)",
 	"author": "Automattic",
 	"license": "GPL-2.0-or-later",
