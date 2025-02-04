@@ -20,6 +20,7 @@ This is an alpha version! The changes listed here are not final.
 - Prompt for labels: update conditions to include "[<plugin> Feature]" labels.
 - Support References: send Slack message when an issue is labeled as customer report.
 - Support references: stop gathering p2 comments in list of support references.
+- Team assignment: update issue mapping for Newsletter to Loop team
 - Updated package dependencies.
 
 ### Fixed
