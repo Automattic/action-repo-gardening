@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.1-alpha] - unreleased
+
+This is an alpha version! The changes listed here are not final.
+
+### Changed
+- Update package dependencies.
+
 ## [7.0.0] - 2025-02-05
 ### Added
 - Add new range for Sensei. [#40644]
@@ -290,6 +297,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
+[7.0.1-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v7.0.0...v7.0.1-alpha
 [7.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.1.0...v6.0.0
 [5.1.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.1.0
