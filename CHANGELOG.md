@@ -15,6 +15,9 @@ This is an alpha version! The changes listed here are not final.
 ### Removed
 - Removed the mention of team review labels.
 
+### Fixed
+- Handle issues with misconfigured milestones.
+
 ## [7.0.0] - 2025-02-05
 ### Added
 - Add new range for Sensei. [#40644]
