@@ -13,6 +13,7 @@ This is an alpha version! The changes listed here are not final.
 - Update package dependencies.
 
 ### Removed
+- Comments on PRs: remove comment about the e2e test report.
 - Removed the mention of team review labels.
 
 ### Fixed
