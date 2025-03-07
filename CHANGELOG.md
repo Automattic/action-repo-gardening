@@ -18,6 +18,7 @@ This is an alpha version! The changes listed here are not final.
 - Removed the mention of team review labels.
 
 ### Fixed
+- Add labels: Avoid trying to add no labels when "[Project] All the things!" is triggered.
 - Handle issues with misconfigured milestones.
 
 ## [7.0.0] - 2025-02-05
