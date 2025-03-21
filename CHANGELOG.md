@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 ### Removed
 - Comments on PRs: remove comment about the e2e test report.
 - Issue Assignment: stop adding the "[Status] In Progress" label to issues when a PR is opened to close that issue.
+- Issue triage: remove mentions of Meteorite team in Slack alerts.
 - Removed the mention of team review labels.
 
 ### Fixed
