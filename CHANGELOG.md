@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - AI Labeling: AI labeling now requires a specific workflow input to be enabled: ai_labeling_enabled
+- Board triage: update slack IDs, team names, and board IDs.
 - Team assignments: do not assign Scan issues to the Backup team.
 - Triage Issues: Update references to Garage team.
 - Update package dependencies.
