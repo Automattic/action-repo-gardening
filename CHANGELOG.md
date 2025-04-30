@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 - Team assignments: do not assign Scan issues to the Backup team.
 - Triage Issues: Update references to Garage team.
 - Update package dependencies.
+- Updates AI Proxy Endpoint to the new AI API Proxy drop-in replacement
 
 ### Removed
 - Comments on PRs: remove comment about the e2e test report.
