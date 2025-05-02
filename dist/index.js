@@ -7684,7 +7684,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 /***/ }),
 
-/***/ 3791:
+/***/ 9752:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -7750,19 +7750,19 @@ const node_path_1 = __nccwpck_require__(9411);
 const node_querystring_1 = __nccwpck_require__(9630);
 const node_util_1 = __nccwpck_require__(7261);
 const node_zlib_1 = __importDefault(__nccwpck_require__(5628));
-const axios_1 = __importDefault(__nccwpck_require__(1732));
+const axios_1 = __importDefault(__nccwpck_require__(3263));
 const form_data_1 = __importDefault(__nccwpck_require__(7174));
 const is_electron_1 = __importDefault(__nccwpck_require__(7316));
 const is_stream_1 = __importDefault(__nccwpck_require__(2347));
 const p_queue_1 = __importDefault(__nccwpck_require__(9173));
 const p_retry_1 = __importStar(__nccwpck_require__(547));
-const errors_1 = __nccwpck_require__(2495);
-const file_upload_1 = __nccwpck_require__(2026);
-const helpers_1 = __importDefault(__nccwpck_require__(7649));
-const instrument_1 = __nccwpck_require__(4368);
-const logger_1 = __nccwpck_require__(3730);
-const methods_1 = __nccwpck_require__(9035);
-const retry_policies_1 = __nccwpck_require__(9502);
+const errors_1 = __nccwpck_require__(1454);
+const file_upload_1 = __nccwpck_require__(2292);
+const helpers_1 = __importDefault(__nccwpck_require__(7992));
+const instrument_1 = __nccwpck_require__(7824);
+const logger_1 = __nccwpck_require__(8685);
+const methods_1 = __nccwpck_require__(4447);
+const retry_policies_1 = __nccwpck_require__(8072);
 /*
  * Helpers
  */
@@ -7801,7 +7801,7 @@ class WebClient extends methods_1.Methods {
      * @param {Function} [webClientOptions.requestInterceptor] - An interceptor to mutate outgoing requests. See {@link https://axios-http.com/docs/interceptors Axios interceptors}
      * @param {Function} [webClientOptions.adapter] - An adapter to allow custom handling of requests. Useful if you would like to use a pre-configured http client. See {@link https://github.com/axios/axios/blob/v1.x/README.md?plain=1#L586 Axios adapter}
      */
-    constructor(token, { slackApiUrl = 'https://slack.com/api/', logger = undefined, logLevel = undefined, maxRequestConcurrency = 100, retryConfig = retry_policies_1.tenRetriesInAboutThirtyMinutes, agent = undefined, tls = undefined, timeout = 0, rejectRateLimitedCalls = false, headers = {}, teamId = undefined, attachOriginalToWebAPIRequestError = true, requestInterceptor = undefined, adapter = undefined, } = {}) {
+    constructor(token, { slackApiUrl = 'https://slack.com/api/', logger = undefined, logLevel = undefined, maxRequestConcurrency = 100, retryConfig = retry_policies_1.tenRetriesInAboutThirtyMinutes, agent = undefined, tls = undefined, timeout = 0, rejectRateLimitedCalls = false, headers = {}, teamId = undefined, allowAbsoluteUrls = true, attachOriginalToWebAPIRequestError = true, requestInterceptor = undefined, adapter = undefined, } = {}) {
         super();
         this.token = token;
         this.slackApiUrl = slackApiUrl;
@@ -7811,6 +7811,7 @@ class WebClient extends methods_1.Methods {
         this.tlsConfig = tls !== undefined ? tls : {};
         this.rejectRateLimitedCalls = rejectRateLimitedCalls;
         this.teamId = teamId;
+        this.allowAbsoluteUrls = allowAbsoluteUrls;
         this.attachOriginalToWebAPIRequestError = attachOriginalToWebAPIRequestError;
         // Logging
         if (typeof logger !== 'undefined') {
@@ -7870,7 +7871,8 @@ class WebClient extends methods_1.Methods {
             const headers = {};
             if (options.token)
                 headers.Authorization = `Bearer ${options.token}`;
-            const response = yield this.makeRequest(method, Object.assign({ team_id: this.teamId }, options), headers);
+            const url = this.deriveRequestUrl(method);
+            const response = yield this.makeRequest(url, Object.assign({ team_id: this.teamId }, options), headers);
             const result = yield this.buildResult(response);
             this.logger.debug(`http request result: ${JSON.stringify(result)}`);
             // log warnings in response metadata
@@ -8100,7 +8102,6 @@ class WebClient extends methods_1.Methods {
         return __awaiter(this, void 0, void 0, function* () {
             // TODO: better input types - remove any
             const task = () => this.requestQueue.add(() => __awaiter(this, void 0, void 0, function* () {
-                const requestURL = url.startsWith('https' || 0) ? url : `${this.axios.getUri() + url}`;
                 try {
                     // biome-ignore lint/suspicious/noExplicitAny: TODO: type this
                     const config = Object.assign({ headers }, this.tlsConfig);
@@ -8114,7 +8115,7 @@ class WebClient extends methods_1.Methods {
                     if (url.endsWith('apps.event.authorizations.list')) {
                         body.token = undefined;
                     }
-                    this.logger.debug(`http request url: ${requestURL}`);
+                    this.logger.debug(`http request url: ${url}`);
                     this.logger.debug(`http request body: ${JSON.stringify(redact(body))}`);
                     // compile all headers - some set by default under the hood by axios - that will be sent along
                     let allHeaders = Object.keys(this.axios.defaults.headers).reduce((acc, cur) => {
@@ -8172,6 +8173,17 @@ class WebClient extends methods_1.Methods {
             // biome-ignore lint/suspicious/noExplicitAny: http responses can be anything
             return (0, p_retry_1.default)(task, this.retryConfig);
         });
+    }
+    /**
+     * Get the complete request URL for the provided URL.
+     * @param url - The resource to POST to. Either a Slack API method or absolute URL.
+     */
+    deriveRequestUrl(url) {
+        const isAbsoluteURL = url.startsWith('https://') || url.startsWith('http://');
+        if (isAbsoluteURL && this.allowAbsoluteUrls) {
+            return url;
+        }
+        return `${this.axios.getUri() + url}`;
     }
     /**
      * Transforms options (a simple key-value object) into an acceptable value for a body. This can be either
@@ -8463,7 +8475,7 @@ function redact(body) {
 
 /***/ }),
 
-/***/ 2495:
+/***/ 1454:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -8550,7 +8562,7 @@ exports.rateLimitedErrorWithDelay = rateLimitedErrorWithDelay;
 
 /***/ }),
 
-/***/ 2026:
+/***/ 2292:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -8568,7 +8580,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.buildInvalidFilesUploadParamError = exports.buildMultipleChannelsErrorMsg = exports.buildChannelsWarning = exports.buildFilesUploadMissingMessage = exports.buildGeneralFilesUploadWarning = exports.buildLegacyMethodWarning = exports.buildMissingExtensionWarning = exports.buildMissingFileNameWarning = exports.buildLegacyFileTypeWarning = exports.buildFileSizeErrorMsg = exports.buildMissingFileIdError = exports.warnIfLegacyFileType = exports.warnIfMissingOrInvalidFileNameAndDefault = exports.errorIfInvalidOrMissingFileData = exports.errorIfChannelsCsv = exports.warnIfChannels = exports.warnIfNotUsingFilesUploadV2 = exports.getAllFileUploadsToComplete = exports.getFileDataAsStream = exports.getFileDataLength = exports.getFileData = exports.getMultipleFileUploadJobs = exports.getFileUploadJob = void 0;
 const node_fs_1 = __nccwpck_require__(7561);
 const node_stream_1 = __nccwpck_require__(4492);
-const errors_1 = __nccwpck_require__(2495);
+const errors_1 = __nccwpck_require__(1454);
 function getFileUploadJob(options, logger) {
     var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
@@ -8926,7 +8938,7 @@ exports.buildInvalidFilesUploadParamError = buildInvalidFilesUploadParamError;
 
 /***/ }),
 
-/***/ 7649:
+/***/ 7992:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -8947,7 +8959,7 @@ exports["default"] = delay;
 
 /***/ }),
 
-/***/ 1529:
+/***/ 2325:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -8972,25 +8984,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.addAppMetadata = exports.retryPolicies = exports.ErrorCode = exports.LogLevel = exports.WebClientEvent = exports.WebClient = void 0;
-var WebClient_1 = __nccwpck_require__(3791);
+var WebClient_1 = __nccwpck_require__(9752);
 Object.defineProperty(exports, "WebClient", ({ enumerable: true, get: function () { return WebClient_1.WebClient; } }));
 Object.defineProperty(exports, "WebClientEvent", ({ enumerable: true, get: function () { return WebClient_1.WebClientEvent; } }));
-var logger_1 = __nccwpck_require__(3730);
+var logger_1 = __nccwpck_require__(8685);
 Object.defineProperty(exports, "LogLevel", ({ enumerable: true, get: function () { return logger_1.LogLevel; } }));
-var errors_1 = __nccwpck_require__(2495);
+var errors_1 = __nccwpck_require__(1454);
 Object.defineProperty(exports, "ErrorCode", ({ enumerable: true, get: function () { return errors_1.ErrorCode; } }));
-var retry_policies_1 = __nccwpck_require__(9502);
+var retry_policies_1 = __nccwpck_require__(8072);
 Object.defineProperty(exports, "retryPolicies", ({ enumerable: true, get: function () { return __importDefault(retry_policies_1).default; } }));
-var instrument_1 = __nccwpck_require__(4368);
+var instrument_1 = __nccwpck_require__(7824);
 Object.defineProperty(exports, "addAppMetadata", ({ enumerable: true, get: function () { return instrument_1.addAppMetadata; } }));
-__exportStar(__nccwpck_require__(9035), exports);
-__exportStar(__nccwpck_require__(7166), exports);
-__exportStar(__nccwpck_require__(4971), exports);
+__exportStar(__nccwpck_require__(4447), exports);
+__exportStar(__nccwpck_require__(3625), exports);
+__exportStar(__nccwpck_require__(5095), exports);
 //# sourceMappingURL=index.js.map
 
 /***/ }),
 
-/***/ 4368:
+/***/ 7824:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -9022,7 +9034,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getUserAgent = exports.addAppMetadata = void 0;
 const os = __importStar(__nccwpck_require__(612));
 const node_path_1 = __nccwpck_require__(9411);
-const packageJson = __nccwpck_require__(1579);
+const packageJson = __nccwpck_require__(1265);
 /**
  * Replaces occurrences of '/' with ':' in a string, since '/' is meaningful inside User-Agent strings as a separator.
  */
@@ -9063,7 +9075,7 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 3730:
+/***/ 8685:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -9099,7 +9111,7 @@ exports.getLogger = getLogger;
 
 /***/ }),
 
-/***/ 9035:
+/***/ 4447:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -9121,7 +9133,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Methods = void 0;
 const eventemitter3_1 = __nccwpck_require__(326);
-const WebClient_1 = __nccwpck_require__(3791);
+const WebClient_1 = __nccwpck_require__(9752);
 /**
  * Binds a certain `method` and its (required) arguments and result types to the `apiCall` method in `WebClient`.
  */
@@ -10180,7 +10192,7 @@ class Methods extends eventemitter3_1.EventEmitter {
              * - multiple upload_files
              * Will try to honor both single file or content data supplied as well
              * as multiple file uploads property.
-             * @see {@link https://slack.dev/node-slack-sdk/web-api#upload-a-file `@slack/web-api` Upload a file documentation}.
+             * @see {@link https://tools.slack.dev/node-slack-sdk/web-api#upload-a-file `@slack/web-api` Upload a file documentation}.
              */
             uploadV2: bindFilesUploadV2(this),
             comments: {
@@ -10632,7 +10644,7 @@ __exportStar(__nccwpck_require__(5188), exports);
 
 /***/ }),
 
-/***/ 9502:
+/***/ 8072:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -10673,7 +10685,7 @@ exports["default"] = policies;
 
 /***/ }),
 
-/***/ 7166:
+/***/ 3625:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -10683,7 +10695,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 /***/ }),
 
-/***/ 4971:
+/***/ 5095:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -54810,7 +54822,7 @@ module.exports = notifyImportantIssues;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 5504 );
-const { WebClient, ErrorCode } = __nccwpck_require__( 1529 );
+const { WebClient, ErrorCode } = __nccwpck_require__( 2325 );
 
 /* global WebhookPayloadPullRequest, WebhookPayloadIssue */
 
@@ -69590,7 +69602,7 @@ Object.defineProperty(exports, "ModelsPage", ({ enumerable: true, get: function 
 Object.defineProperty(exports, "Models", ({ enumerable: true, get: function () { return models_1.Models; } }));
 var moderations_1 = __nccwpck_require__(8338);
 Object.defineProperty(exports, "Moderations", ({ enumerable: true, get: function () { return moderations_1.Moderations; } }));
-var uploads_1 = __nccwpck_require__(7992);
+var uploads_1 = __nccwpck_require__(9104);
 Object.defineProperty(exports, "Uploads", ({ enumerable: true, get: function () { return uploads_1.Uploads; } }));
 //# sourceMappingURL=index.js.map
 
@@ -69760,7 +69772,7 @@ exports.Parts = Parts;
 
 /***/ }),
 
-/***/ 7992:
+/***/ 9104:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -72503,11 +72515,11 @@ exports.PathScurry = process.platform === 'win32' ? PathScurryWin32
 
 /***/ }),
 
-/***/ 1732:
+/***/ 3263:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
-/*! Axios v1.8.2 Copyright (c) 2025 Matt Zabriskie and contributors */
+/*! Axios v1.9.0 Copyright (c) 2025 Matt Zabriskie and contributors */
 
 
 const FormData$1 = __nccwpck_require__(7174);
@@ -72545,6 +72557,7 @@ function bind(fn, thisArg) {
 
 const {toString} = Object.prototype;
 const {getPrototypeOf} = Object;
+const {iterator, toStringTag} = Symbol;
 
 const kindOf = (cache => thing => {
     const str = toString.call(thing);
@@ -72671,7 +72684,7 @@ const isPlainObject = (val) => {
   }
 
   const prototype = getPrototypeOf(val);
-  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in val) && !(Symbol.iterator in val);
+  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(toStringTag in val) && !(iterator in val);
 };
 
 /**
@@ -73022,13 +73035,13 @@ const isTypedArray = (TypedArray => {
  * @returns {void}
  */
 const forEachEntry = (obj, fn) => {
-  const generator = obj && obj[Symbol.iterator];
+  const generator = obj && obj[iterator];
 
-  const iterator = generator.call(obj);
+  const _iterator = generator.call(obj);
 
   let result;
 
-  while ((result = iterator.next()) && !result.done) {
+  while ((result = _iterator.next()) && !result.done) {
     const pair = result.value;
     fn.call(obj, pair[0], pair[1]);
   }
@@ -73149,7 +73162,7 @@ const toFiniteNumber = (value, defaultValue) => {
  * @returns {boolean}
  */
 function isSpecCompliantForm(thing) {
-  return !!(thing && isFunction(thing.append) && thing[Symbol.toStringTag] === 'FormData' && thing[Symbol.iterator]);
+  return !!(thing && isFunction(thing.append) && thing[toStringTag] === 'FormData' && thing[iterator]);
 }
 
 const toJSONObject = (obj) => {
@@ -73218,6 +73231,10 @@ const asap = typeof queueMicrotask !== 'undefined' ?
 
 // *********************
 
+
+const isIterable = (thing) => thing != null && isFunction(thing[iterator]);
+
+
 const utils$1 = {
   isArray,
   isArrayBuffer,
@@ -73273,7 +73290,8 @@ const utils$1 = {
   isAsyncFn,
   isThenable,
   setImmediate: _setImmediate,
-  asap
+  asap,
+  isIterable
 };
 
 /**
@@ -74276,10 +74294,18 @@ class AxiosHeaders {
       setHeaders(header, valueOrRewrite);
     } else if(utils$1.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
       setHeaders(parseHeaders(header), valueOrRewrite);
-    } else if (utils$1.isHeaders(header)) {
-      for (const [key, value] of header.entries()) {
-        setHeader(value, key, rewrite);
+    } else if (utils$1.isObject(header) && utils$1.isIterable(header)) {
+      let obj = {}, dest, key;
+      for (const entry of header) {
+        if (!utils$1.isArray(entry)) {
+          throw TypeError('Object iterator must return a key-value pair');
+        }
+
+        obj[key = entry[0]] = (dest = obj[key]) ?
+          (utils$1.isArray(dest) ? [...dest, entry[1]] : [dest, entry[1]]) : entry[1];
       }
+
+      setHeaders(obj, valueOrRewrite);
     } else {
       header != null && setHeader(valueOrRewrite, header, rewrite);
     }
@@ -74419,6 +74445,10 @@ class AxiosHeaders {
 
   toString() {
     return Object.entries(this.toJSON()).map(([header, value]) => header + ': ' + value).join('\n');
+  }
+
+  getSetCookie() {
+    return this.get("set-cookie") || [];
   }
 
   get [Symbol.toStringTag]() {
@@ -74587,13 +74617,13 @@ function combineURLs(baseURL, relativeURL) {
  */
 function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
   let isRelativeUrl = !isAbsoluteURL(requestedURL);
-  if (baseURL && isRelativeUrl || allowAbsoluteUrls == false) {
+  if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) {
     return combineURLs(baseURL, requestedURL);
   }
   return requestedURL;
 }
 
-const VERSION = "1.8.2";
+const VERSION = "1.9.0";
 
 function parseProtocol(url) {
   const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
@@ -74875,7 +74905,7 @@ const formDataToStream = (form, headersHandler, options) => {
   }
 
   const boundaryBytes = textEncoder.encode('--' + boundary + CRLF);
-  const footerBytes = textEncoder.encode('--' + boundary + '--' + CRLF + CRLF);
+  const footerBytes = textEncoder.encode('--' + boundary + '--' + CRLF);
   let contentLength = footerBytes.byteLength;
 
   const parts = Array.from(form.entries()).map(([name, value]) => {
@@ -75911,7 +75941,7 @@ const resolveConfig = (config) => {
 
   newConfig.headers = headers = AxiosHeaders$1.from(headers);
 
-  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url), config.params, config.paramsSerializer);
+  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url, newConfig.allowAbsoluteUrls), config.params, config.paramsSerializer);
 
   // HTTP basic authentication
   if (auth) {
@@ -76476,7 +76506,7 @@ const fetchAdapter = isFetchSupported && (async (config) => {
   } catch (err) {
     unsubscribe && unsubscribe();
 
-    if (err && err.name === 'TypeError' && /fetch/i.test(err.message)) {
+    if (err && err.name === 'TypeError' && /Load failed|fetch/i.test(err.message)) {
       throw Object.assign(
         new AxiosError('Network Error', AxiosError.ERR_NETWORK, config, request),
         {
@@ -76742,7 +76772,7 @@ const validators = validator.validators;
  */
 class Axios {
   constructor(instanceConfig) {
-    this.defaults = instanceConfig;
+    this.defaults = instanceConfig || {};
     this.interceptors = {
       request: new InterceptorManager$1(),
       response: new InterceptorManager$1()
@@ -77276,11 +77306,11 @@ module.exports = axios;
 
 /***/ }),
 
-/***/ 1579:
+/***/ 1265:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"@slack/web-api","version":"7.7.0","description":"Official library for using the Slack Platform\'s Web API","author":"Slack Technologies, LLC","license":"MIT","keywords":["slack","web-api","bot","client","http","api","proxy","rate-limiting","pagination"],"main":"dist/index.js","types":"./dist/index.d.ts","files":["dist/**/*"],"engines":{"node":">= 18","npm":">= 8.6.0"},"repository":"slackapi/node-slack-sdk","homepage":"https://slack.dev/node-slack-sdk/web-api","publishConfig":{"access":"public"},"bugs":{"url":"https://github.com/slackapi/node-slack-sdk/issues"},"scripts":{"prepare":"npm run build","build":"npm run build:clean && tsc","build:clean":"shx rm -rf ./dist ./coverage","lint":"npx @biomejs/biome check --write .","mocha":"mocha --config .mocharc.json \\"./src/**/*.spec.ts\\"","test":"npm run lint && npm run test:types && npm run test:integration && npm run test:unit","test:integration":"npm run build && node test/integration/commonjs-project/index.js && node test/integration/esm-project/index.mjs && npm run test:integration:ts","test:integration:ts":"cd test/integration/ts-4.7-project && npm i && npm run build","test:unit":"npm run build && c8 npm run mocha","test:types":"tsd","watch":"npx nodemon --watch \'src\' --ext \'ts\' --exec npm run build"},"dependencies":{"@slack/logger":"^4.0.0","@slack/types":"^2.9.0","@types/node":">=18.0.0","@types/retry":"0.12.0","axios":"^1.7.4","eventemitter3":"^5.0.1","form-data":"^4.0.0","is-electron":"2.2.2","is-stream":"^2","p-queue":"^6","p-retry":"^4","retry":"^0.13.1"},"devDependencies":{"@biomejs/biome":"^1.8.3","@tsconfig/recommended":"^1","@types/busboy":"^1.5.4","@types/chai":"^4","@types/mocha":"^10","@types/sinon":"^17","busboy":"^1","c8":"^10.1.2","chai":"^4","mocha":"^10","nock":"^13","shx":"^0.3.2","sinon":"^19","source-map-support":"^0.5.21","ts-node":"^10","tsd":"^0.31.1","typescript":"5.3.3"},"tsd":{"directory":"test/types"}}');
+module.exports = JSON.parse('{"name":"@slack/web-api","version":"7.9.1","description":"Official library for using the Slack Platform\'s Web API","author":"Slack Technologies, LLC","license":"MIT","keywords":["slack","web-api","bot","client","http","api","proxy","rate-limiting","pagination"],"main":"dist/index.js","types":"./dist/index.d.ts","files":["dist/**/*"],"engines":{"node":">= 18","npm":">= 8.6.0"},"repository":"slackapi/node-slack-sdk","homepage":"https://tools.slack.dev/node-slack-sdk/web-api","publishConfig":{"access":"public"},"bugs":{"url":"https://github.com/slackapi/node-slack-sdk/issues"},"scripts":{"prepare":"npm run build","build":"npm run build:clean && tsc","build:clean":"shx rm -rf ./dist ./coverage","lint":"npx @biomejs/biome check .","lint:fix":"npx @biomejs/biome check --write .","mocha":"mocha --config ./test/.mocharc.json \\"./src/**/*.spec.ts\\"","test":"npm run lint && npm run test:types && npm run test:integration && npm run test:unit","test:integration":"npm run build && node test/integration/commonjs-project/index.js && node test/integration/esm-project/index.mjs && npm run test:integration:ts","test:integration:ts":"cd test/integration/ts-4.7-project && npm i && npm run build","test:unit":"npm run build && c8 --config ./test/.c8rc.json npm run mocha","test:types":"tsd","watch":"npx nodemon --watch \'src\' --ext \'ts\' --exec npm run build"},"dependencies":{"@slack/logger":"^4.0.0","@slack/types":"^2.9.0","@types/node":">=18.0.0","@types/retry":"0.12.0","axios":"^1.8.3","eventemitter3":"^5.0.1","form-data":"^4.0.0","is-electron":"2.2.2","is-stream":"^2","p-queue":"^6","p-retry":"^4","retry":"^0.13.1"},"devDependencies":{"@biomejs/biome":"^1.8.3","@tsconfig/recommended":"^1","@types/busboy":"^1.5.4","@types/chai":"^4","@types/mocha":"^10","@types/sinon":"^17","busboy":"^1","c8":"^10.1.2","chai":"^4","mocha":"^11","mocha-junit-reporter":"^2.2.1","mocha-multi-reporters":"^1.5.1","nock":"^13","shx":"^0.4.0","sinon":"^20","source-map-support":"^0.5.21","ts-node":"^10","tsd":"^0.31.1","typescript":"5.3.3"},"tsd":{"directory":"test/types"}}');
 
 /***/ }),
 
