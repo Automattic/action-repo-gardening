@@ -1850,7 +1850,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 7798:
+/***/ 6775:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -1882,6 +1882,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -1912,7 +1913,7 @@ exports.Context = Context;
 
 /***/ }),
 
-/***/ 6864:
+/***/ 6585:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1942,8 +1943,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokit = exports.context = void 0;
-const Context = __importStar(__nccwpck_require__(7798));
-const utils_1 = __nccwpck_require__(5295);
+const Context = __importStar(__nccwpck_require__(6775));
+const utils_1 = __nccwpck_require__(3777);
 exports.context = new Context.Context();
 /**
  * Returns a hydrated octokit ready to use for GitHub Actions
@@ -1960,7 +1961,7 @@ exports.getOctokit = getOctokit;
 
 /***/ }),
 
-/***/ 916:
+/***/ 9456:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -2037,7 +2038,7 @@ exports.getApiBaseUrl = getApiBaseUrl;
 
 /***/ }),
 
-/***/ 5295:
+/***/ 3777:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -2067,8 +2068,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokitOptions = exports.GitHub = exports.defaults = exports.context = void 0;
-const Context = __importStar(__nccwpck_require__(7798));
-const Utils = __importStar(__nccwpck_require__(916));
+const Context = __importStar(__nccwpck_require__(6775));
+const Utils = __importStar(__nccwpck_require__(9456));
 // octokit + plugins
 const core_1 = __nccwpck_require__(9270);
 const plugin_rest_endpoint_methods_1 = __nccwpck_require__(6940);
@@ -53222,7 +53223,7 @@ module.exports = triageIssues;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setFailed } = __nccwpck_require__( 5504 );
-const { getOctokit } = __nccwpck_require__( 6864 );
+const { getOctokit } = __nccwpck_require__( 6585 );
 const debug = __nccwpck_require__( 7197 );
 const getLabels = __nccwpck_require__( 5479 );
 const notifyImportantIssues = __nccwpck_require__( 2746 );
@@ -77502,7 +77503,7 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { setFailed, getInput } = __nccwpck_require__( 5504 );
-const { context, getOctokit } = __nccwpck_require__( 6864 );
+const { context, getOctokit } = __nccwpck_require__( 6585 );
 const addLabels = __nccwpck_require__( 6156 );
 const addMilestone = __nccwpck_require__( 8022 );
 const assignIssues = __nccwpck_require__( 9584 );
