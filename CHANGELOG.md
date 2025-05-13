@@ -5,27 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [8.0.0-alpha] - unreleased
-
-This is an alpha version! The changes listed here are not final.
-
+## [8.0.0] - 2025-05-13
 ### Changed
-- AI Labeling: AI labeling now requires a specific workflow input to be enabled: ai_labeling_enabled
-- Board triage: update slack IDs, team names, and board IDs.
-- Team assignments: do not assign Scan issues to the Backup team.
-- Triage Issues: Update references to Garage team.
-- Update package dependencies.
-- Updates AI Proxy Endpoint to the new AI API Proxy drop-in replacement
+- AI Labeling: AI labeling now requires `ai_labeling_enabled` workflow input to be enabled. [#43264]
+- Board triage: Update slack IDs, team names, and board IDs. [#43267]
+- Team assignments: Do not assign Scan issues to the Backup team. [#42790]
+- Triage Issues: Update references to Garage team. [#43244]
+- Update package dependencies. [#41852] [#43348]
+- Update AI Proxy Endpoint to the new AI API Proxy drop-in replacement. [#43276]
 
 ### Removed
-- Comments on PRs: remove comment about the e2e test report.
-- Issue Assignment: stop adding the "[Status] In Progress" label to issues when a PR is opened to close that issue.
-- Issue triage: remove mentions of Meteorite team in Slack alerts.
-- Removed the mention of team review labels.
+- Comments on PRs: Remove comment about the e2e test report. [#42181]
+- Issue Assignment: Stop adding the "[Status] In Progress" label to issues when a PR is opened to close that issue. [#42246]
+- Issue triage: Remove mentions of Meteorite team in Slack alerts. [#42638]
+- Remove the mention of team review labels. [#42039]
 
 ### Fixed
-- Add labels: Avoid trying to add no labels when "[Project] All the things!" is triggered.
-- Handle issues with misconfigured milestones.
+- Add Labels: Avoid trying to add no labels when "[Project] All the things!" is triggered. [#42270]
+- Handle issues with misconfigured milestones. [#42150]
 
 ## [7.0.0] - 2025-02-05
 ### Added
@@ -312,7 +309,7 @@ This is an alpha version! The changes listed here are not final.
 
 - Initial release
 
-[8.0.0-alpha]: https://github.com/Automattic/action-repo-gardening/compare/v7.0.0...v8.0.0-alpha
+[8.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v7.0.0...v8.0.0
 [7.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.1.0...v6.0.0
 [5.1.0]: https://github.com/Automattic/action-repo-gardening/compare/v5.0.0...v5.1.0
