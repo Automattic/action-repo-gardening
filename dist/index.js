@@ -7802,7 +7802,7 @@ const node_querystring_1 = __nccwpck_require__(9630);
 const node_util_1 = __nccwpck_require__(7261);
 const node_zlib_1 = __importDefault(__nccwpck_require__(5628));
 const axios_1 = __importDefault(__nccwpck_require__(5105));
-const form_data_1 = __importDefault(__nccwpck_require__(108));
+const form_data_1 = __importDefault(__nccwpck_require__(355));
 const is_electron_1 = __importDefault(__nccwpck_require__(7316));
 const is_stream_1 = __importDefault(__nccwpck_require__(2347));
 const p_queue_1 = __importDefault(__nccwpck_require__(9173));
@@ -13884,7 +13884,7 @@ module.exports.wrap = wrap;
 
 /***/ }),
 
-/***/ 108:
+/***/ 355:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -13903,7 +13903,7 @@ var mime = __nccwpck_require__(3127);
 var asynckit = __nccwpck_require__(3798);
 var setToStringTag = __nccwpck_require__(2662);
 var hasOwn = __nccwpck_require__(3902);
-var populate = __nccwpck_require__(5854);
+var populate = __nccwpck_require__(4031);
 
 /**
  * Create readable "multipart/form-data" streams.
@@ -14354,7 +14354,7 @@ FormData.prototype.submit = function (params, cb) {
         request.removeListener('error', callback);
         request.removeListener('response', onResponse);
 
-        return cb.call(this, error, responce); // eslint-disable-line no-invalid-this
+        return cb.call(this, error, responce);
       };
 
       onResponse = callback.bind(this, null);
@@ -14378,7 +14378,7 @@ FormData.prototype._error = function (err) {
 FormData.prototype.toString = function () {
   return '[object FormData]';
 };
-setToStringTag(FormData, 'FormData');
+setToStringTag(FormData.prototype, 'FormData');
 
 // Public API
 module.exports = FormData;
@@ -14386,7 +14386,7 @@ module.exports = FormData;
 
 /***/ }),
 
-/***/ 5854:
+/***/ 4031:
 /***/ ((module) => {
 
 "use strict";
@@ -61117,7 +61117,7 @@ const tslib_1 = __nccwpck_require__(8840);
 const error_1 = __nccwpck_require__(6450);
 const RunnableFunction_1 = __nccwpck_require__(6009);
 const chatCompletionUtils_1 = __nccwpck_require__(6420);
-const EventStream_1 = __nccwpck_require__(4031);
+const EventStream_1 = __nccwpck_require__(7420);
 const parser_1 = __nccwpck_require__(8631);
 const DEFAULT_MAX_CHAT_COMPLETIONS = 10;
 class AbstractChatCompletionRunner extends EventStream_1.EventStream {
@@ -61414,7 +61414,7 @@ exports.AssistantStream = void 0;
 const tslib_1 = __nccwpck_require__(8840);
 const streaming_1 = __nccwpck_require__(2346);
 const error_1 = __nccwpck_require__(6450);
-const EventStream_1 = __nccwpck_require__(4031);
+const EventStream_1 = __nccwpck_require__(7420);
 const utils_1 = __nccwpck_require__(351);
 class AssistantStream extends EventStream_1.EventStream {
     constructor() {
@@ -62525,7 +62525,7 @@ exports.ChatCompletionStreamingRunner = ChatCompletionStreamingRunner;
 
 /***/ }),
 
-/***/ 4031:
+/***/ 7420:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -63157,7 +63157,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ResponseStream = void 0;
 const tslib_1 = __nccwpck_require__(8840);
 const error_1 = __nccwpck_require__(6450);
-const EventStream_1 = __nccwpck_require__(4031);
+const EventStream_1 = __nccwpck_require__(7420);
 const ResponsesParser_1 = __nccwpck_require__(6071);
 class ResponseStream extends EventStream_1.EventStream {
     constructor(params) {
@@ -68194,7 +68194,7 @@ exports.PathScurry = process.platform === 'win32' ? PathScurryWin32
 /*! Axios v1.12.0 Copyright (c) 2025 Matt Zabriskie and contributors */
 
 
-const FormData$1 = __nccwpck_require__(108);
+const FormData$1 = __nccwpck_require__(355);
 const crypto = __nccwpck_require__(6113);
 const url = __nccwpck_require__(7310);
 const proxyFromEnv = __nccwpck_require__(3969);
