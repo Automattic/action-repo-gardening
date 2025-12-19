@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Changed
 - Update package dependencies.
+- Update README to recommend vars instead of secrets where appropriate.
 - Use the node24 runner instead of the deprecated node20 runner.
 
 ## [8.0.2] - 2025-10-13
