@@ -44990,9 +44990,9 @@ async function getFileDerivedLabels( octokit, owner, repo, number, isDraft, isRe
 		keywords.add( '[Status] In Progress' );
 	}
 
-	// Add '[Type] Revert' for revert PRs
+	// Add 'Bug' for revert PRs
 	if ( isRevert ) {
-		keywords.add( '[Type] Revert' );
+		keywords.add( 'Bug' );
 	}
 
 	return [ ...keywords ];
@@ -46905,7 +46905,7 @@ function cleanIssueContent( content ) {
  *
  * When an issue is first opened, parse its contents, send them to OpenAI,
  * and add labels if any matching labels can be found.
- * During testing, we'll only run it for issues that are not labeled as "[Type] Task".
+ * During testing, we'll only run it for issues that are not labeled as task.
  * When we auto-label, we'll add a label to note that the issue was processed.
  *
  * @param {WebhookPayloadIssue} payload - Issue event payload.
@@ -46937,7 +46937,7 @@ async function aiLabeling( payload, octokit ) {
 
 	if (
 		! issueLabels.includes( '[Experiment] AI labels added' ) &&
-		! issueLabels.includes( '[Type] Task' )
+		! issueLabels.some( label => label === '[Type] Task' || label === 'Task' )
 	) {
 		const issueContents = cleanIssueContent( body );
 
@@ -47310,6 +47310,7 @@ module.exports = getIssuePriority;
 const { getInput } = __nccwpck_require__( 5504 );
 const debug = __nccwpck_require__( 7197 );
 const getIssueType = __nccwpck_require__( 5706 );
+const { TYPE_LABELS_WITHOUT_PREFIX } = __nccwpck_require__( 7268 );
 const findPlatforms = __nccwpck_require__( 4207 );
 const findPlugins = __nccwpck_require__( 2621 );
 const formatSlackMessage = __nccwpck_require__( 3954 );
@@ -47354,7 +47355,7 @@ async function addCommentAskLabels( octokit, ownerLogin, authorLogin, repo, issu
 		return;
 	}
 
-	const commentBody = `This issue could use some more labels, to help prioritize and categorize our work. Could you please add at least a \`[Type]\`, a \`[Feature]\`, and a \`[Pri]\` label?
+	const commentBody = `This issue could use some more labels, to help prioritize and categorize our work. Could you please add at least a \`[Feature]\`, a \`[Pri]\`, and a Type label?
 `;
 
 	await octokit.rest.issues.createComment( {
@@ -47462,12 +47463,14 @@ async function triageIssues( payload, octokit ) {
 			const issueLabels = await aiLabeling( payload, octokit );
 
 			// At this point, if we still miss a [Type] label, a [Feature] label, or a [Pri] label, ask the author to add it.
-			const requiredLabelTypes = [ /^\[Type\]/, /^\[Pri/, /^\[[^\]]*Feature/ ];
-			const missingLabelTypes = requiredLabelTypes.filter(
-				requiredLabelType => ! issueLabels.some( label => requiredLabelType.test( label ) )
-			);
+			// Check for Type labels: either [Type] prefixed labels or labels from the hardcoded list.
+			const hasTypeLabel =
+				issueLabels.some( label => label.startsWith( '[Type]' ) ) ||
+				issueLabels.some( label => TYPE_LABELS_WITHOUT_PREFIX.includes( label ) );
+			const hasPriorityLabel = issueLabels.some( label => /^\[Pri/.test( label ) );
+			const hasFeatureLabel = issueLabels.some( label => /^\[[^\]]*Feature/.test( label ) );
 
-			if ( missingLabelTypes.length > 0 ) {
+			if ( ! hasTypeLabel || ! hasPriorityLabel || ! hasFeatureLabel ) {
 				await addCommentAskLabels( octokit, ownerLogin, authorLogin, name, number );
 			}
 		}
@@ -48728,13 +48731,19 @@ module.exports = getAvailableLabels;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const getLabels = __nccwpck_require__( 5479 );
+const { TYPE_LABELS_WITHOUT_PREFIX } = __nccwpck_require__( 7268 );
 
 /* global GitHub */
 
 /**
- * Extract the type of the issue, based of the the "[Type]" labels found in that issue.
- * If multiple Type labels can be found in the issue, we cannot extract a specific type.
- * We will consequently return an empty string.
+ * Extract the type of the issue.
+ * Issues can use 2 different types of labels to indicate type:
+ * 1. Labels with a "[Type]" prefix.
+ * 2. An exact set of labels without a "[Type]" prefix.
+ *
+ * When multiple Type labels are found, we favor labels from the hardcoded list (without prefix).
+ * If multiple Type labels from the hardcoded list are found, or if no clear type can be determined,
+ * we will return an empty string.
  *
  * @param {GitHub} octokit - Initialized Octokit REST client.
  * @param {string} owner   - Repository owner.
@@ -48745,18 +48754,34 @@ const getLabels = __nccwpck_require__( 5479 );
 async function getIssueType( octokit, owner, repo, number ) {
 	const labels = await getLabels( octokit, owner, repo, number );
 
-	// Extract type labels, and return them all in a new array, but without the [Type] prefix.
-	const typeLabels = labels
-		.filter( label => label.startsWith( '[Type]' ) )
-		.map( label => label.replace( '[Type] ', '' ) );
+	// Extract type labels without prefix.
+	const typeLabelsWithoutPrefix = labels.filter( label =>
+		TYPE_LABELS_WITHOUT_PREFIX.includes( label )
+	);
 
-	// If there are multiple types defined in the issue, we cannot extract a specific type.
-	// We will consequently return an empty string.
-	if ( typeLabels.length !== 1 ) {
+	// Favor labels from the hardcoded list (without prefix).
+	// If there's exactly one label from the hardcoded list, return it.
+	if ( typeLabelsWithoutPrefix.length === 1 ) {
+		return typeLabelsWithoutPrefix[ 0 ];
+	}
+
+	// If there are multiple labels from the hardcoded list, we cannot extract a specific type.
+	if ( typeLabelsWithoutPrefix.length > 1 ) {
 		return '';
 	}
 
-	return typeLabels[ 0 ];
+	// Fall back to [Type] prefixed labels if no hardcoded labels are found.
+	// Extract type labels with [Type] prefix, and return them without the prefix.
+	const typeLabelsWithPrefix = labels
+		.filter( label => label.startsWith( '[Type]' ) )
+		.map( label => label.replace( '[Type] ', '' ) );
+
+	if ( typeLabelsWithPrefix.length === 1 ) {
+		return typeLabelsWithPrefix[ 0 ];
+	}
+
+	// If there are multiple [Type] prefixed labels or no type labels at all, return empty string.
+	return '';
 }
 
 module.exports = getIssueType;
@@ -48808,6 +48833,36 @@ async function getLabels( octokit, owner, repo, number ) {
 }
 
 module.exports = getLabels;
+
+
+/***/ }),
+
+/***/ 7268:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "TYPE_LABELS_WITHOUT_PREFIX": () => (/* binding */ TYPE_LABELS_WITHOUT_PREFIX)
+/* harmony export */ });
+/**
+ * Valid Type labels, used in issues and PRs.
+ * That list matches the list of Type labels in use in Linear.
+ */
+const TYPE_LABELS_WITHOUT_PREFIX = [
+	'Bug',
+	'Code Quality',
+	'Documentation',
+	'Enhancement',
+	'New Feature',
+	'Question',
+	'Release',
+	'Reporting',
+	'Review',
+	'Security',
+	'Task',
+	'Tests',
+];
 
 
 /***/ }),
