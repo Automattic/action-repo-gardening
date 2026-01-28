@@ -9674,7 +9674,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Methods = void 0;
-const eventemitter3_1 = __nccwpck_require__(326);
+const eventemitter3_1 = __nccwpck_require__(6257);
 const WebClient_1 = __nccwpck_require__(6454);
 /**
  * Binds a certain `method` and its (required) arguments and result types to the `apiCall` method in `WebClient`.
@@ -13109,7 +13109,7 @@ if (true) {
 
 /***/ }),
 
-/***/ 326:
+/***/ 6257:
 /***/ ((module) => {
 
 "use strict";
@@ -56938,7 +56938,7 @@ exports.GlobStream = GlobStream;
 
 /***/ }),
 
-/***/ 7749:
+/***/ 8326:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -58107,6 +58107,8 @@ class LRUCache {
         const cb = (v, updateCache = false) => {
             const { aborted } = ac.signal;
             const ignoreAbort = options.ignoreFetchAbort && v !== undefined;
+            const proceed = options.ignoreFetchAbort ||
+                !!(options.allowStaleOnFetchAbort && v !== undefined);
             if (options.status) {
                 if (aborted && !updateCache) {
                     options.status.fetchAborted = true;
@@ -58119,7 +58121,7 @@ class LRUCache {
                 }
             }
             if (aborted && !ignoreAbort && !updateCache) {
-                return fetchFail(ac.signal.reason);
+                return fetchFail(ac.signal.reason, proceed);
             }
             // either we didn't abort, and are still here, or we did, and ignored
             const bf = p;
@@ -58149,9 +58151,10 @@ class LRUCache {
                 options.status.fetchRejected = true;
                 options.status.fetchError = er;
             }
-            return fetchFail(er);
+            // do not pass go, do not collect $200
+            return fetchFail(er, false);
         };
-        const fetchFail = (er) => {
+        const fetchFail = (er, proceed) => {
             const { aborted } = ac.signal;
             const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
             const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
@@ -58160,7 +58163,8 @@ class LRUCache {
             if (this.#valList[index] === p) {
                 // if we allow stale on fetch rejections, then we need to ensure that
                 // the stale value is not removed from the cache when the fetch fails.
-                const del = !noDelete || bf.__staleWhileFetching === undefined;
+                const del = !noDelete ||
+                    !proceed && bf.__staleWhileFetching === undefined;
                 if (del) {
                     this.#delete(k, 'fetch');
                 }
@@ -70162,7 +70166,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PathScurry = exports.Path = exports.PathScurryDarwin = exports.PathScurryPosix = exports.PathScurryWin32 = exports.PathScurryBase = exports.PathPosix = exports.PathWin32 = exports.PathBase = exports.ChildrenCache = exports.ResolveCache = void 0;
-const lru_cache_1 = __nccwpck_require__(7749);
+const lru_cache_1 = __nccwpck_require__(8326);
 const node_path_1 = __nccwpck_require__(9411);
 const node_url_1 = __nccwpck_require__(1041);
 const fs_1 = __nccwpck_require__(7147);
