@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Added
+- Add AI-based check for user-facing PR changes.
+
 ### Changed
 - Label management: support a hardcoded list of type labels on top of the existing [Type] labels.
 - PR checks: stop requiring the use of a "Type" label in PRs.

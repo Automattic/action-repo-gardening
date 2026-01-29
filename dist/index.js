@@ -8087,7 +8087,7 @@ const node_util_1 = __nccwpck_require__(7261);
 const node_zlib_1 = __importDefault(__nccwpck_require__(5628));
 const axios_1 = __importDefault(__nccwpck_require__(5105));
 const form_data_1 = __importDefault(__nccwpck_require__(355));
-const is_electron_1 = __importDefault(__nccwpck_require__(7316));
+const is_electron_1 = __importDefault(__nccwpck_require__(819));
 const is_stream_1 = __importDefault(__nccwpck_require__(2347));
 const p_queue_1 = __importDefault(__nccwpck_require__(9173));
 const p_retry_1 = __importStar(__nccwpck_require__(547));
@@ -14187,7 +14187,7 @@ var mime = __nccwpck_require__(3127);
 var asynckit = __nccwpck_require__(3798);
 var setToStringTag = __nccwpck_require__(2662);
 var hasOwn = __nccwpck_require__(3902);
-var populate = __nccwpck_require__(4031);
+var populate = __nccwpck_require__(1302);
 
 /**
  * Create readable "multipart/form-data" streams.
@@ -14670,7 +14670,7 @@ module.exports = FormData;
 
 /***/ }),
 
-/***/ 4031:
+/***/ 1302:
 /***/ ((module) => {
 
 "use strict";
@@ -15382,7 +15382,7 @@ module.exports = bind.call(call, $hasOwn);
 
 /***/ }),
 
-/***/ 7316:
+/***/ 819:
 /***/ ((module) => {
 
 // https://github.com/electron/electron/issues/2288
@@ -51252,6 +51252,306 @@ module.exports = checkDescription;
 
 /***/ }),
 
+/***/ 9841:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { getInput } = __nccwpck_require__( 6508 );
+const debug = __nccwpck_require__( 7197 );
+const getDiff = __nccwpck_require__( 555 );
+const getLabels = __nccwpck_require__( 5479 );
+const sendOpenAiRequest = __nccwpck_require__( 6137 );
+const sendSlackMessage = __nccwpck_require__( 2146 );
+
+/* global GitHub, WebhookPayloadPullRequest */
+
+/**
+ * Clean up the PR body content for AI processing.
+ * Remove links and HTML from the content.
+ *
+ * @param {string} content - PR body content.
+ * @return {string} Cleaned up content.
+ */
+function cleanContent( content ) {
+	if ( ! content ) {
+		return '';
+	}
+
+	// Remove markdown links [text](url), but keep the text.
+	content = content.replace( /\[([^\]]*)\]\([^)]+\)/g, '$1' );
+
+	// Remove HTML links <a ...>text</a>, but keep the text.
+	content = content.replace( /<a\b[^>]*>(.*?)<\/a>/gi, '$1' );
+
+	// Replace bare URLs with [link].
+	content = content.replace( /https?:\/\/\S+/g, '[link]' );
+
+	// Remove complete HTML comments, applying repeatedly to avoid incomplete multi-character sanitization.
+	let previousContent;
+	do {
+		previousContent = content;
+		content = content.replace( /<!--[\s\S]*?-->/g, '' );
+	} while ( content !== previousContent );
+
+	// Remove incomplete HTML comments (opening tag without closing) by truncating at the first `<!--`.
+	const incompleteCommentIndex = content.indexOf( '<!--' );
+	if ( incompleteCommentIndex !== -1 ) {
+		content = content.slice( 0, incompleteCommentIndex );
+	}
+
+	return content;
+}
+
+/**
+ * Sanitize content for inclusion in a markdown code block.
+ *
+ * In GitHub-flavored Markdown, backslashes don't escape backticks inside code blocks.
+ * Instead, you use more backticks for the fence than appear in the content.
+ * We use 4 backticks for our fences, so we replace any sequence of 4+ backticks.
+ *
+ * @param {string} content - Content to sanitize.
+ * @return {string} Sanitized content.
+ */
+function sanitizeForPrompt( content ) {
+	if ( ! content ) {
+		return '';
+	}
+
+	// Replace sequences of 4 or more backticks (which could break our 4-backtick fences)
+	// with a safe placeholder. This prevents prompt injection via code block delimiters.
+	return content.replace( /````+/g, '[code-fence]' );
+}
+
+/**
+ * Build the prompt for the AI to analyze the PR.
+ *
+ * @param {string} title - PR title.
+ * @param {string} body  - PR body (cleaned).
+ * @param {string} diff  - PR diff (cleaned).
+ * @return {string} The prompt for the AI.
+ */
+function buildPrompt( title, body, diff ) {
+	const sanitizedTitle = sanitizeForPrompt( title || '' );
+	const sanitizedBody = sanitizeForPrompt( body || '' );
+	const sanitizedDiff = sanitizeForPrompt( diff || '' );
+
+	return `You are analyzing a GitHub Pull Request to determine if it contains changes that would require updates to user-facing support documentation.
+
+The key question is: "Would support documentation need to be updated to reflect these changes?"
+
+Changes that WOULD require documentation updates (flag these):
+- Changed UI workflows or interactions users need to understand
+- New features or settings that need to be documented
+- Changed text that appears in documentation screenshots or examples
+- Changed behavior that affects how users accomplish tasks
+- Changes to public APIs that external developers need to know about
+- Modified error messages that support docs reference
+
+Changes that would NOT require documentation updates (do NOT flag these):
+- Refactoring code without changing user-visible behavior
+- Code cleanup that preserves identical functionality
+- Test-only changes (adding, modifying, or removing tests)
+- Internal tooling or build configuration
+- Developer documentation and code comments
+- Dependency updates with no behavior change
+- CI/CD configuration changes
+- Performance optimizations with no visible behavior change
+- Minor visual polish (slight color adjustments, spacing tweaks)
+- Bug fixes that restore documented behavior
+
+IMPORTANT: The question is not "does this change something users see?" but "would a technical writer need to update the support documentation?"
+
+Here is the PR title:
+\`\`\`\`
+${ sanitizedTitle }
+\`\`\`\`
+
+Here is the PR description:
+\`\`\`\`
+${ sanitizedBody || '(No description provided)' }
+\`\`\`\`
+
+Here is the code diff:
+\`\`\`\`
+${ sanitizedDiff }
+\`\`\`\`
+
+Analyze this PR and determine if support documentation would need to be updated.
+
+Respond with a JSON object in this exact format:
+{
+  "is_user_facing": boolean,
+  "confidence": "high" | "medium" | "low",
+  "reason": "Brief explanation (1-2 sentences)"
+}`;
+}
+
+/**
+ * Check if a PR contains user-facing changes using AI analysis.
+ * If user-facing with medium/high confidence, add the [Status] UI Changes label.
+ *
+ * @param {WebhookPayloadPullRequest} payload - Pull request event payload.
+ * @param {GitHub}                    octokit - Initialized Octokit REST client.
+ */
+async function checkIfDocsNeeded( payload, octokit ) {
+	const {
+		pull_request: { number, body, title, merged },
+		repository: {
+			owner: { login: ownerLogin },
+			name,
+		},
+	} = payload;
+
+	// Skip if the PR was closed without being merged.
+	if ( ! merged ) {
+		debug( `check-if-docs-needed: PR #${ number } was closed without being merged. Skipping.` );
+		return;
+	}
+
+	const uiChangesLabel = '[Status] UI Changes';
+
+	// Check if OpenAI API key is provided.
+	const apiKey = getInput( 'openai_api_key' );
+	if ( ! apiKey ) {
+		debug( `check-if-docs-needed: No OpenAI API key provided for PR #${ number }. Skipping.` );
+		return;
+	}
+
+	// Fetch current labels.
+	const prLabels = await getLabels( octokit, ownerLogin, name, number );
+
+	// Check if PR already has the UI Changes label.
+	if ( prLabels.includes( uiChangesLabel ) ) {
+		debug(
+			`check-if-docs-needed: PR #${ number } already has "${ uiChangesLabel }" label. Skipping.`
+		);
+		return;
+	}
+
+	// Skip if PR title starts with "Revert" (the standard GitHub revert format).
+	// This avoids false positives like "Undo revert and fix..." or "New UI for post revert feature".
+	if ( /^revert\b/i.test( title ) ) {
+		debug( `check-if-docs-needed: PR #${ number } title starts with "revert". Skipping.` );
+		return;
+	}
+
+	// Fetch the diff.
+	let diff;
+	try {
+		diff = await getDiff( octokit, ownerLogin, name, number );
+	} catch ( error ) {
+		debug( `check-if-docs-needed: Failed to fetch diff for PR #${ number }: ${ error }` );
+		return;
+	}
+
+	// Check if diff is too small to analyze.
+	if ( ! diff || diff.length < 50 ) {
+		debug( `check-if-docs-needed: PR #${ number } diff is too small to analyze. Skipping.` );
+		return;
+	}
+
+	// Clean the PR body and build the prompt.
+	const cleanedBody = cleanContent( body );
+	const prompt = buildPrompt( title, cleanedBody, diff );
+
+	debug( `check-if-docs-needed: Sending PR #${ number } to OpenAI for analysis.` );
+
+	// Call OpenAI.
+	const response = await sendOpenAiRequest( prompt, 'json_object' );
+
+	if ( ! response ) {
+		debug(
+			`check-if-docs-needed: OpenAI request returned no response for PR #${ number }. Skipping docs check.`
+		);
+		return;
+	}
+
+	debug( `check-if-docs-needed: OpenAI response for PR #${ number }: ${ response }` );
+
+	// Parse the response.
+	let result;
+	try {
+		result = JSON.parse( response );
+	} catch ( error ) {
+		debug(
+			`check-if-docs-needed: Failed to parse OpenAI response for PR #${ number }: ${ error }. Response was: ${ response }`
+		);
+		return;
+	}
+
+	let isUserFacing = false;
+	if ( typeof result?.is_user_facing === 'boolean' ) {
+		isUserFacing = result.is_user_facing;
+	} else {
+		debug(
+			`check-if-docs-needed: PR #${ number } - is_user_facing is not a boolean, got: ${ JSON.stringify(
+				result?.is_user_facing
+			) }. Defaulting to false.`
+		);
+	}
+
+	let confidence = 'low';
+	if (
+		result?.confidence &&
+		typeof result.confidence === 'string' &&
+		[ 'low', 'medium', 'high' ].includes( result.confidence.trim().toLowerCase() )
+	) {
+		confidence = result.confidence.trim().toLowerCase();
+	} else {
+		debug(
+			`check-if-docs-needed: PR #${ number } - confidence is not a valid value, got: ${ JSON.stringify(
+				result?.confidence
+			) }. Defaulting to low.`
+		);
+	}
+
+	const reason = result?.reason && typeof result.reason === 'string' ? result.reason.trim() : '';
+
+	// Apply UI Changes label if user-facing with medium or high confidence.
+	if ( isUserFacing && ( confidence === 'high' || confidence === 'medium' ) ) {
+		debug(
+			`check-if-docs-needed: PR #${ number } is user-facing (confidence: ${ confidence }). Adding "${ uiChangesLabel }" label. Reason: ${ reason }`
+		);
+		await octokit.rest.issues.addLabels( {
+			owner: ownerLogin,
+			repo: name,
+			issue_number: number,
+			labels: [ uiChangesLabel ],
+		} );
+
+		// Send Slack notification if product ambassadors channel is configured.
+		const slackProductAmbassadorsChannel = getInput( 'slack_product_ambassadors_channel' );
+		const slackToken = getInput( 'slack_token' );
+
+		if ( slackProductAmbassadorsChannel && slackToken ) {
+			debug( `check-if-docs-needed: Sending Slack notification for PR #${ number }.` );
+			try {
+				await sendSlackMessage(
+					`This PR was flagged as containing user-facing changes. Please review and update documentation if needed.\n\n*AI reasoning:* ${ reason }`,
+					slackProductAmbassadorsChannel,
+					payload
+				);
+			} catch ( error ) {
+				debug(
+					`check-if-docs-needed: Failed to send Slack notification for PR #${ number }: ${ error }`
+				);
+			}
+		} else if ( slackProductAmbassadorsChannel && ! slackToken ) {
+			debug(
+				`check-if-docs-needed: Slack product ambassadors channel is configured but slack_token is missing. Skipping Slack notification for PR #${ number }.`
+			);
+		}
+	} else {
+		debug(
+			`check-if-docs-needed: PR #${ number } is not user-facing or low confidence. Not adding label. Reason: ${ reason }`
+		);
+	}
+}
+
+module.exports = checkIfDocsNeeded;
+
+
+/***/ }),
+
 /***/ 4876:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -52828,7 +53128,7 @@ const debug = __nccwpck_require__( 7197 );
 const getIssueType = __nccwpck_require__( 5706 );
 const { TYPE_LABELS_WITHOUT_PREFIX } = __nccwpck_require__( 7268 );
 const findPlatforms = __nccwpck_require__( 4207 );
-const findPlugins = __nccwpck_require__( 2621 );
+const findPlugins = __nccwpck_require__( 3603 );
 const formatSlackMessage = __nccwpck_require__( 3954 );
 const notifyImportantIssues = __nccwpck_require__( 2746 );
 const sendSlackMessage = __nccwpck_require__( 2146 );
@@ -53943,6 +54243,190 @@ module.exports = getComments;
 
 /***/ }),
 
+/***/ 555:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+/* global GitHub */
+const debug = __nccwpck_require__( 7197 );
+
+// Cache for getDiff.
+const cache = {};
+
+/**
+ * Remove unwanted file diffs (e.g., lockfiles) from a GitHub diff string.
+ *
+ * GitHub diffs are composed of per-file blocks starting with:
+ * `diff --git a/<path> b/<path>`
+ *
+ * @param {string} diff - Full diff string from GitHub.
+ * @return {string} Filtered diff string.
+ */
+function filterDiff( diff ) {
+	if ( ! diff ) {
+		return '';
+	}
+
+	// Files we consider noise for "code change" analysis.
+	const ignoredFilenames = new Set( [
+		'composer.lock',
+		'package-lock.json',
+		'pnpm-workspace.yaml',
+		'pnpm-lock.yaml',
+		'yarn.lock',
+	] );
+
+	const lines = diff.split( '\n' );
+	const keptLines = [];
+
+	let currentFileHeader = null;
+	let currentBlock = [];
+
+	const flushBlock = () => {
+		if ( ! currentBlock.length ) {
+			return;
+		}
+
+		// If we can't detect the file header, keep the block (better safe than sorry).
+		if ( ! currentFileHeader ) {
+			keptLines.push( ...currentBlock );
+			return;
+		}
+
+		// Parse `diff --git a/<path> b/<path>`.
+		const match = currentFileHeader.match( /^diff --git a\/(.+?) b\/(.+?)\s*$/ );
+		if ( ! match ) {
+			keptLines.push( ...currentBlock );
+			return;
+		}
+
+		const pathA = match[ 1 ];
+		const pathB = match[ 2 ];
+		const filenameA = pathA.split( '/' ).pop();
+		const filenameB = pathB.split( '/' ).pop();
+
+		const shouldIgnore = ignoredFilenames.has( filenameA ) || ignoredFilenames.has( filenameB );
+
+		if ( shouldIgnore ) {
+			debug( `get-diff: Removing diff block for ignored file "${ filenameB || filenameA }".` );
+			return;
+		}
+
+		keptLines.push( ...currentBlock );
+	};
+
+	for ( const line of lines ) {
+		if ( line.startsWith( 'diff --git ' ) ) {
+			flushBlock();
+			currentFileHeader = line;
+			currentBlock = [ line ];
+			continue;
+		}
+		currentBlock.push( line );
+	}
+
+	flushBlock();
+
+	return keptLines.join( '\n' );
+}
+
+/**
+ * Get the diff for a PR.
+ *
+ * Filters out lines longer than 500 characters (likely minified code)
+ * removes diffs for lock files (noise for code analysis),
+ * and truncates the result to maxSize characters.
+ *
+ * @param {GitHub} octokit - Initialized Octokit REST client.
+ * @param {string} owner   - Repository owner.
+ * @param {string} repo    - Repository name.
+ * @param {number} number  - PR number.
+ * @param {number} maxSize - Maximum size of diff to return (default 50000 characters).
+ * @return {Promise<string>} Promise resolving to the PR diff as a string, truncated to maxSize.
+ * @throws {Error} Throws an error if the API request fails or if the PR cannot be fetched.
+ */
+async function getDiff( octokit, owner, repo, number, maxSize = 50000 ) {
+	const cacheKey = `${ owner }/${ repo } #${ number }`;
+	if ( cache[ cacheKey ] ) {
+		debug( `get-diff: Returning diff for ${ cacheKey } from cache.` );
+		return cache[ cacheKey ];
+	}
+
+	debug( `get-diff: Fetching diff for ${ cacheKey }.` );
+
+	const response = await octokit.rest.pulls.get( {
+		owner,
+		repo,
+		pull_number: +number,
+		mediaType: {
+			format: 'diff',
+		},
+	} );
+
+	let diff = response.data;
+
+	if ( typeof diff !== 'string' ) {
+		debug(
+			`get-diff: Expected diff to be a string but received ${ typeof diff }. Returning empty diff.`
+		);
+		diff = '';
+	}
+
+	// Remove unwanted file blocks (e.g., lockfiles) before further processing/truncation.
+	diff = filterDiff( diff );
+
+	// Filter out very long content lines (likely minified code) while preserving diff structure.
+	// We keep diff header lines (diff --, +++, ---, @@, etc.) regardless of length to avoid
+	// breaking the diff format. Only actual content lines (starting with +, -, or space) are filtered.
+	// Note: This may also filter legitimate long lines like inline SVG or long markdown paragraphs,
+	// but such lines are typically not useful for AI analysis of user-facing changes.
+	const maxLineLength = 500;
+	let filteredLineCount = 0;
+	diff = diff
+		.split( '\n' )
+		.filter( line => {
+			// Always keep diff header lines to preserve structure
+			if (
+				line.startsWith( 'diff --git' ) ||
+				line.startsWith( '---' ) ||
+				line.startsWith( '+++' ) ||
+				line.startsWith( '@@' ) ||
+				line.startsWith( 'index ' ) ||
+				line.startsWith( 'new file' ) ||
+				line.startsWith( 'deleted file' ) ||
+				line.startsWith( 'Binary files' )
+			) {
+				return true;
+			}
+			// Filter long content lines
+			if ( line.length > maxLineLength ) {
+				filteredLineCount++;
+				return false;
+			}
+			return true;
+		} )
+		.join( '\n' );
+
+	if ( filteredLineCount > 0 ) {
+		debug(
+			`get-diff: Filtered ${ filteredLineCount } lines longer than ${ maxLineLength } characters.`
+		);
+	}
+
+	// Truncate if too large.
+	if ( diff.length > maxSize ) {
+		debug( `get-diff: Truncating diff from ${ diff.length } to ${ maxSize } characters.` );
+		diff = diff.substring( 0, maxSize );
+	}
+
+	cache[ cacheKey ] = diff;
+	return diff;
+}
+
+module.exports = getDiff;
+
+
+/***/ }),
+
 /***/ 1746:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -54463,7 +54947,7 @@ module.exports = findPlatforms;
 
 /***/ }),
 
-/***/ 2621:
+/***/ 3603:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const debug = __nccwpck_require__( 7197 );
@@ -65091,7 +65575,7 @@ const tslib_1 = __nccwpck_require__(8840);
 const error_1 = __nccwpck_require__(6450);
 const RunnableFunction_1 = __nccwpck_require__(6009);
 const chatCompletionUtils_1 = __nccwpck_require__(6420);
-const EventStream_1 = __nccwpck_require__(7420);
+const EventStream_1 = __nccwpck_require__(4031);
 const parser_1 = __nccwpck_require__(8631);
 const DEFAULT_MAX_CHAT_COMPLETIONS = 10;
 class AbstractChatCompletionRunner extends EventStream_1.EventStream {
@@ -65386,9 +65870,9 @@ var _AssistantStream_instances, _a, _AssistantStream_events, _AssistantStream_ru
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AssistantStream = void 0;
 const tslib_1 = __nccwpck_require__(8840);
-const streaming_1 = __nccwpck_require__(2346);
+const streaming_1 = __nccwpck_require__(7316);
 const error_1 = __nccwpck_require__(6450);
-const EventStream_1 = __nccwpck_require__(7420);
+const EventStream_1 = __nccwpck_require__(4031);
 const utils_1 = __nccwpck_require__(351);
 class AssistantStream extends EventStream_1.EventStream {
     constructor() {
@@ -65979,7 +66463,7 @@ exports.ChatCompletionStream = void 0;
 const tslib_1 = __nccwpck_require__(8840);
 const error_1 = __nccwpck_require__(6450);
 const AbstractChatCompletionRunner_1 = __nccwpck_require__(5970);
-const streaming_1 = __nccwpck_require__(2346);
+const streaming_1 = __nccwpck_require__(7316);
 const parser_1 = __nccwpck_require__(8631);
 const parser_2 = __nccwpck_require__(3550);
 class ChatCompletionStream extends AbstractChatCompletionRunner_1.AbstractChatCompletionRunner {
@@ -66499,7 +66983,7 @@ exports.ChatCompletionStreamingRunner = ChatCompletionStreamingRunner;
 
 /***/ }),
 
-/***/ 7420:
+/***/ 4031:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -67131,7 +67615,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ResponseStream = void 0;
 const tslib_1 = __nccwpck_require__(8840);
 const error_1 = __nccwpck_require__(6450);
-const EventStream_1 = __nccwpck_require__(7420);
+const EventStream_1 = __nccwpck_require__(4031);
 const ResponsesParser_1 = __nccwpck_require__(1649);
 class ResponseStream extends EventStream_1.EventStream {
     constructor(params) {
@@ -67380,8 +67864,8 @@ const tslib_1 = __nccwpck_require__(8840);
 const resource_1 = __nccwpck_require__(3605);
 const SpeechAPI = tslib_1.__importStar(__nccwpck_require__(1154));
 const speech_1 = __nccwpck_require__(1154);
-const TranscriptionsAPI = tslib_1.__importStar(__nccwpck_require__(8505));
-const transcriptions_1 = __nccwpck_require__(8505);
+const TranscriptionsAPI = tslib_1.__importStar(__nccwpck_require__(2621));
+const transcriptions_1 = __nccwpck_require__(2621);
 const TranslationsAPI = tslib_1.__importStar(__nccwpck_require__(4754));
 const translations_1 = __nccwpck_require__(4754);
 class Audio extends resource_1.APIResource {
@@ -67440,7 +67924,7 @@ exports.Speech = Speech;
 
 /***/ }),
 
-/***/ 8505:
+/***/ 2621:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -70111,7 +70595,7 @@ VectorStores.FileBatches = file_batches_1.FileBatches;
 
 /***/ }),
 
-/***/ 2346:
+/***/ 7316:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -77262,6 +77746,7 @@ const addLabels = __nccwpck_require__( 6156 );
 const addMilestone = __nccwpck_require__( 8022 );
 const assignIssues = __nccwpck_require__( 9584 );
 const checkDescription = __nccwpck_require__( 4415 );
+const checkIfDocsNeeded = __nccwpck_require__( 9841 );
 const cleanLabels = __nccwpck_require__( 4876 );
 const flagOss = __nccwpck_require__( 6327 );
 const gatherSupportReferences = __nccwpck_require__( 1030 );
@@ -77318,6 +77803,11 @@ const automations = [
 		event: 'pull_request_target',
 		action: [ 'opened' ],
 		task: flagOss,
+	},
+	{
+		event: 'pull_request_target',
+		action: [ 'closed' ],
+		task: ifNotFork( checkIfDocsNeeded ),
 	},
 	{
 		event: 'issues',
