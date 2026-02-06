@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 - Label management: support a hardcoded list of type labels on top of the existing [Type] labels.
 - PR checks: stop requiring the use of a "Type" label in PRs.
 - Update package dependencies.
+- Update prompt.
 
 ## [9.0.0] - 2026-01-12
 ### Changed
