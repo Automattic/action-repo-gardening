@@ -15,6 +15,7 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Added Jest test infrastructure and unit tests for utility functions.
 - Convert codebase from CommonJS to ES Modules (ESM).
+- Improve the check-if-docs-needed AI prompt to reduce false positives by tightening criteria for inclusion and exclusion and adding a conservative approach.
 - Label management: support a hardcoded list of type labels on top of the existing [Type] labels.
 - PR checks: stop requiring the use of a "Type" label in PRs.
 - Repo Gardening: convert codebase from JavaScript to TypeScript with strict mode.
