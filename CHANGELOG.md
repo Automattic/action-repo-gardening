@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Added
 - Add AI-based check for user-facing PR changes.
+- Check if docs needed: Add optional Linear issue creation when a PR is flagged as containing user-facing changes.
 
 ### Changed
 - Added Jest test infrastructure and unit tests for utility functions.
