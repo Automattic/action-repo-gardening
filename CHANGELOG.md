@@ -23,6 +23,9 @@ This is an alpha version! The changes listed here are not final.
 - Update package dependencies.
 - Update prompt.
 
+### Fixed
+- Improved prompt to have more explicit exclusion criteria for when doc updates are needed.
+
 ## [9.0.0] - 2026-01-12
 ### Changed
 - Update package dependencies. [#45753] [#45961]
