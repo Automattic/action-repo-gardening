@@ -56125,6 +56125,44 @@ async function getFiles(octokit, owner, repo, number) {
 }
 /* harmony default export */ const get_files = (getFiles);
 
+;// CONCATENATED MODULE: ./src/utils/labels/get-available-labels.ts
+
+// Cache for getLabels.
+const get_available_labels_cache = {};
+/**
+ * Get all the labels available in the repo.
+ *
+ * @param octokit - Initialized Octokit REST client.
+ * @param owner   - Repository owner.
+ * @param repo    - Repository name.
+ * @param filter  - Optionally filter to only return a subset of labels. Use a regex pattern.
+ * @return Promise resolving to an array of all labels in the repo.
+ */
+async function getAvailableLabels(octokit, owner, repo, filter = '') {
+    let labelList;
+    const cacheKey = `${owner}/${repo}`;
+    if (get_available_labels_cache[cacheKey]) {
+        utils_debug(`get-all-labels: Using list of labels for ${cacheKey} from cache.`);
+        labelList = get_available_labels_cache[cacheKey];
+    }
+    else {
+        utils_debug(`get-all-labels: Get list of labels for ${cacheKey}.`);
+        labelList = [];
+        for await (const response of octokit.paginate.iterator(octokit.rest.issues.listLabelsForRepo, {
+            owner,
+            repo,
+            per_page: 100,
+        })) {
+            for (const label of response.data) {
+                labelList.push(label);
+            }
+        }
+        get_available_labels_cache[cacheKey] = labelList;
+    }
+    return filter ? labelList.filter(label => label.name.match(filter)) : labelList;
+}
+/* harmony default export */ const get_available_labels = (getAvailableLabels);
+
 ;// CONCATENATED MODULE: ./src/utils/labels/get-labels.ts
 
 // Cache for getLabels.
@@ -56162,6 +56200,7 @@ async function getLabels(octokit, owner, repo, number) {
 /* harmony default export */ const get_labels = (getLabels);
 
 ;// CONCATENATED MODULE: ./src/tasks/add-labels/index.ts
+
 
 
 
@@ -56385,7 +56424,7 @@ async function getFileDerivedLabels(octokit, owner, repo, number, isDraft, isRev
 async function addLabels(payload, octokit) {
     const { number, repository, pull_request } = payload;
     const { owner, name } = repository;
-    const { draft, title } = pull_request;
+    const { draft, title, head, base } = pull_request;
     // GitHub allows 100 labels on a PR.
     // Limit to less than that to allow a buffer for future manual labels.
     const maxLabels = 90;
@@ -56404,6 +56443,15 @@ async function addLabels(payload, octokit) {
     if (labelsToAdd.length === 0) {
         utils_debug('add-labels: No new labels to add to that PR. Aborting.');
         return;
+    }
+    // For fork PRs, only add labels that already exist in the repo
+    // to avoid creating new labels from untrusted sources.
+    const isFork = head.repo?.full_name !== base.repo?.full_name;
+    if (isFork) {
+        utils_debug('add-labels: PR is from a fork. Filtering to only existing repo labels.');
+        const availableLabels = await get_available_labels(octokit, owner.login, name);
+        const availableLabelNames = new Set(availableLabels.map(label => label.name));
+        labelsToAdd = labelsToAdd.filter(label => availableLabelNames.has(label));
     }
     // Determine how many labels can safely be added.
     let maxLabelsToAdd = Math.max(0, maxLabels - currentLabels.length);
@@ -159653,44 +159701,6 @@ async function notifyImportantIssues(octokit, payload, channel, recipients = 'de
     }
 }
 /* harmony default export */ const notify_important_issues = (notifyImportantIssues);
-
-;// CONCATENATED MODULE: ./src/utils/labels/get-available-labels.ts
-
-// Cache for getLabels.
-const get_available_labels_cache = {};
-/**
- * Get all the labels available in the repo.
- *
- * @param octokit - Initialized Octokit REST client.
- * @param owner   - Repository owner.
- * @param repo    - Repository name.
- * @param filter  - Optionally filter to only return a subset of labels. Use a regex pattern.
- * @return Promise resolving to an array of all labels in the repo.
- */
-async function getAvailableLabels(octokit, owner, repo, filter = '') {
-    let labelList;
-    const cacheKey = `${owner}/${repo}`;
-    if (get_available_labels_cache[cacheKey]) {
-        utils_debug(`get-all-labels: Using list of labels for ${cacheKey} from cache.`);
-        labelList = get_available_labels_cache[cacheKey];
-    }
-    else {
-        utils_debug(`get-all-labels: Get list of labels for ${cacheKey}.`);
-        labelList = [];
-        for await (const response of octokit.paginate.iterator(octokit.rest.issues.listLabelsForRepo, {
-            owner,
-            repo,
-            per_page: 100,
-        })) {
-            for (const label of response.data) {
-                labelList.push(label);
-            }
-        }
-        get_available_labels_cache[cacheKey] = labelList;
-    }
-    return filter ? labelList.filter(label => label.name.match(filter)) : labelList;
-}
-/* harmony default export */ const get_available_labels = (getAvailableLabels);
 
 ;// CONCATENATED MODULE: ./src/tasks/triage-issues/ai-labeling.ts
 

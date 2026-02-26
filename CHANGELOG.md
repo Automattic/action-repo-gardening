@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is an alpha version! The changes listed here are not final.
 
+### Security
+- Prevent fork PRs from creating new labels in the repository; only add labels that already exist.
+
 ### Added
 - Add AI-based check for user-facing PR changes.
 - Check if docs needed: Add optional Linear issue creation when a PR is flagged as containing user-facing changes.
