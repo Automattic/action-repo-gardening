@@ -11,6 +11,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Security
 - Prevent fork PRs from creating new labels in the repository; only add labels that already exist.
+- Prevent symlink-based file content exfiltration when reading composer.json files from PR checkouts.
 
 ### Added
 - Add AI-based check for user-facing PR changes.

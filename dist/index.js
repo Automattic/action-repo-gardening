@@ -51848,7 +51848,7 @@ function error(message, properties = {}) {
  * @param properties optional properties to add to the annotation.
  */
 function warning(message, properties = {}) {
-    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    command_issueCommand('warning', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a notice issue
@@ -64732,7 +64732,52 @@ function getPrWorkspace() {
 }
 /* harmony default export */ const get_pr_workspace = (getPrWorkspace);
 
+;// CONCATENATED MODULE: ./src/utils/safe-read-file.ts
+
+
+/**
+ * Read a file safely, rejecting symlinks and paths that escape a boundary directory.
+ *
+ * @param filePath    - Absolute path to the file to read.
+ * @param boundaryDir - Absolute path to the directory the file must reside within.
+ * @return File contents as a string.
+ */
+function safeReadFileSync(filePath, boundaryDir) {
+    // Reject direct symlinks (lstatSync does NOT follow symlinks).
+    const stat = external_fs_default().lstatSync(filePath);
+    if (stat.isSymbolicLink()) {
+        throw new Error(`Refusing to read symlink: ${filePath}`);
+    }
+    // Resolve the full chain and verify the result stays within the boundary.
+    // This catches symlinks on intermediate directory components.
+    const realPath = external_fs_default().realpathSync(filePath);
+    const realBoundary = external_fs_default().realpathSync(boundaryDir);
+    const relative = external_path_default().relative(realBoundary, realPath);
+    if (relative.startsWith('..' + (external_path_default()).sep) ||
+        relative === '..' ||
+        external_path_default().isAbsolute(relative)) {
+        throw new Error(`Path escapes workspace boundary: ${filePath}`);
+    }
+    return external_fs_default().readFileSync(realPath).toString();
+}
+/**
+ * Parse JSON without leaking file content in error messages.
+ *
+ * @param content - The string to parse.
+ * @param label   - A label for error messages (typically the file path).
+ * @return Parsed JSON value.
+ */
+function safeJsonParse(content, label) {
+    try {
+        return JSON.parse(content);
+    }
+    catch {
+        throw new Error(`Invalid JSON in ${label}`);
+    }
+}
+
 ;// CONCATENATED MODULE: ./src/utils/get-affected-changelogger-projects.ts
+
 
 
 
@@ -64743,9 +64788,17 @@ function getPrWorkspace() {
  */
 function getChangeloggerProjects() {
     const projects = [];
-    const composerFiles = glob.sync(get_pr_workspace() + '/projects/*/*/composer.json');
+    const workspace = get_pr_workspace();
+    const composerFiles = glob.sync(workspace + '/projects/*/*/composer.json');
     composerFiles.forEach(file => {
-        const json = JSON.parse(external_fs_default().readFileSync(file).toString());
+        let json;
+        try {
+            json = safeJsonParse(safeReadFileSync(file, workspace), file);
+        }
+        catch (err) {
+            warning(`Skipping ${file}: ${err.message}`);
+            return;
+        }
         if (
         // include changelogger package and any other packages that use changelogger package.
         file.endsWith('/projects/packages/changelogger/composer.json') ||
@@ -65009,7 +65062,7 @@ async function getChangelogEntries(octokit, owner, repo, number) {
     utils_debug(`check-description: affected changelogger projects: ${affectedProjects}`);
     return affectedProjects.reduce((acc, project) => {
         const composerFile = `${baseDir}/projects/${project}/composer.json`;
-        const json = JSON.parse(external_fs_default().readFileSync(composerFile).toString());
+        const json = safeJsonParse(safeReadFileSync(composerFile, baseDir), composerFile);
         // Changelog directory could be customized via .extra.changelogger.changes-dir in composer.json. Lets check for it.
         const changelogDir = external_path_default().relative(baseDir, external_path_default().resolve(`${baseDir}/projects/${project}`, (json.extra && json.extra.changelogger && json.extra.changelogger['changes-dir']) ||
             'changelog')) + '/';
