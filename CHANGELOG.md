@@ -30,6 +30,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Fixed
 - Improved prompt to have more explicit exclusion criteria for when doc updates are needed.
+- Improves flagging of PRs that need doc updates.
 
 ## [9.0.0] - 2026-01-12
 ### Changed
