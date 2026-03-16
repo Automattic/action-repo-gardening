@@ -64080,7 +64080,9 @@ My PR adds *x* and *y*.
         hasChangelogEntries: `Please add missing changelog entries for the following projects: \`${statusChecks.projectsWithoutChangelog.join('`, `')}\`
 
 Use [the Jetpack CLI tool](https://github.com/Automattic/jetpack/blob/trunk/docs/monorepo.md#first-time) to generate changelog entries by running the following command: \`jetpack changelog add\`.
-Guidelines: [/docs/writing-a-good-changelog-entry.md](https://github.com/Automattic/jetpack/blob/trunk/docs/writing-a-good-changelog-entry.md)
+${statusChecks.isFromContributor
+            ? 'Alternatively, you can check the "Generate changelog entries" checkbox in the PR description to have them auto-generated.\n'
+            : ''}Guidelines: [/docs/writing-a-good-changelog-entry.md](https://github.com/Automattic/jetpack/blob/trunk/docs/writing-a-good-changelog-entry.md)
 `,
     };
     // If some of the tests are failing, display list of things that could be updated in the PR description to fix things.
