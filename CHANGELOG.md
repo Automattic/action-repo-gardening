@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 ### Added
 - Add AI-based check for user-facing PR changes.
 - Check if docs needed: Add optional Linear issue creation when a PR is flagged as containing user-facing changes.
+- Gather support references: Add a new slack_notify_on_customer_report input to allow disabling Slack notifications when the Customer Report label is added to an issue.
 
 ### Changed
 - Added Jest test infrastructure and unit tests for utility functions.

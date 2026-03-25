@@ -158276,12 +158276,11 @@ async function addHappinessLabel(payload, octokit) {
         issue_number: number,
         labels: [happinessLabel],
     });
-    // Send Slack notification, if we have the necessary tokens.
-    // No Slack tokens, we won't be able to escalate. Bail.
-    // If the issue is already closed, do not send any Slack reminder.
+    // Send Slack notification, if we have the necessary tokens and the feature is enabled.
+    const slackNotifyOnCustomerReport = getInput('slack_notify_on_customer_report') !== 'false';
     const slackToken = getInput('slack_token');
     const channel = getInput('slack_quality_channel');
-    if (!slackToken || !channel || state === 'closed') {
+    if (!slackNotifyOnCustomerReport || !slackToken || !channel || state === 'closed') {
         return;
     }
     const message = `This issue has been labeled as a Customer Report. Please complete first-line triage within 24 hours.`;
