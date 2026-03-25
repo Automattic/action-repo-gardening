@@ -27,6 +27,7 @@ This is an alpha version! The changes listed here are not final.
 - PR checks: stop requiring the use of a "Type" label in PRs.
 - Repo Gardening: convert codebase from JavaScript to TypeScript with strict mode.
 - Switch to Native TypeScript compiler based on Go.
+- Update legacy Node calls.
 - Update package dependencies.
 - Update prompt.
 

@@ -56315,8 +56315,6 @@ function getOctokit(token, options, ...additionalPlugins) {
     return new GitHubWithPlugins(getOctokitOptions(token, options));
 }
 //# sourceMappingURL=github.js.map
-// EXTERNAL MODULE: external "url"
-var external_url_ = __nccwpck_require__(7310);
 ;// CONCATENATED MODULE: ./src/utils/clean-name.ts
 /**
  * Clean up a feature name:
@@ -56492,8 +56490,6 @@ async function getLabels(octokit, owner, repo, number) {
 
 
 
-
-const add_labels_filename = (0,external_url_.fileURLToPath)(import.meta.url);
 /**
  * Build a list of labels to add to the pull request, based off our file list.
  *
@@ -56527,7 +56523,7 @@ async function getFileDerivedLabels(octokit, owner, repo, number, isDraft, isRev
                 const err = new Error(`Cannot determine label prefix for plugin type "${project.groups.ptype}"`);
                 // Produce a GitHub error annotation pointing here.
                 const line = Number(err.stack?.split('\n')[1]?.split(':')[1]) - 2;
-                utils_debug(`::error file=${add_labels_filename},line=${line}::${err.message}`);
+                utils_debug(`::error file=${import.meta.filename},line=${line}::${err.message}`);
                 throw err;
             }
             keywords.add(`[${prefix}] ${clean_name(project.groups.pname)}`);
