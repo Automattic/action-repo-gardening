@@ -51602,7 +51602,7 @@ function error(message, properties = {}) {
  * @param properties optional properties to add to the annotation.
  */
 function warning(message, properties = {}) {
-    command_issueCommand('warning', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a notice issue
@@ -56687,53 +56687,7 @@ function getPrWorkspace() {
 }
 /* harmony default export */ const get_pr_workspace = (getPrWorkspace);
 
-;// CONCATENATED MODULE: ./src/utils/safe-read-file.ts
-
-
-/**
- * Read a file safely, rejecting symlinks and paths that escape a boundary directory.
- *
- * @param filePath    - Absolute path to the file to read.
- * @param boundaryDir - Absolute path to the directory the file must reside within.
- * @return File contents as a string.
- */
-function safeReadFileSync(filePath, boundaryDir) {
-    // Reject direct symlinks (lstatSync does NOT follow symlinks).
-    const stat = external_fs_default().lstatSync(filePath);
-    if (stat.isSymbolicLink()) {
-        throw new Error(`Refusing to read symlink: ${filePath}`);
-    }
-    // Resolve the full chain and verify the result stays within the boundary.
-    // This catches symlinks on intermediate directory components.
-    const realPath = external_fs_default().realpathSync(filePath);
-    const realBoundary = external_fs_default().realpathSync(boundaryDir);
-    const relative = external_path_default().relative(realBoundary, realPath);
-    if (relative.startsWith('..' + (external_path_default()).sep) ||
-        relative === '..' ||
-        external_path_default().isAbsolute(relative)) {
-        throw new Error(`Path escapes workspace boundary: ${filePath}`);
-    }
-    return external_fs_default().readFileSync(realPath).toString();
-}
-/**
- * Parse JSON without leaking file content in error messages.
- *
- * @param content - The string to parse.
- * @param label   - A label for error messages (typically the file path).
- * @return Parsed JSON value.
- */
-function safeJsonParse(content, label) {
-    try {
-        return JSON.parse(content);
-    }
-    catch {
-        throw new Error(`Invalid JSON in ${label}`);
-    }
-}
-
 ;// CONCATENATED MODULE: ./src/utils/get-affected-changelogger-projects.ts
-
-
 
 
 /**
@@ -56746,21 +56700,7 @@ function getChangeloggerProjects() {
     const workspace = get_pr_workspace();
     const composerFiles = Ze.sync(workspace + '/projects/*/*/composer.json');
     composerFiles.forEach(file => {
-        let json;
-        try {
-            json = safeJsonParse(safeReadFileSync(file, workspace), file);
-        }
-        catch (err) {
-            warning(`Skipping ${file}: ${err.message}`);
-            return;
-        }
-        if (
-        // include changelogger package and any other packages that use changelogger package.
-        file.endsWith('/projects/packages/changelogger/composer.json') ||
-            json.require?.['automattic/jetpack-changelogger'] ||
-            json['require-dev']?.['automattic/jetpack-changelogger']) {
-            projects.push(getProject(file).fullName);
-        }
+        projects.push(getProject(file).fullName);
     });
     return projects;
 }
@@ -56835,6 +56775,50 @@ async function getComments(octokit, owner, repo, number) {
     return issueComments;
 }
 /* harmony default export */ const get_comments = (getComments);
+
+;// CONCATENATED MODULE: ./src/utils/safe-read-file.ts
+
+
+/**
+ * Read a file safely, rejecting symlinks and paths that escape a boundary directory.
+ *
+ * @param filePath    - Absolute path to the file to read.
+ * @param boundaryDir - Absolute path to the directory the file must reside within.
+ * @return File contents as a string.
+ */
+function safeReadFileSync(filePath, boundaryDir) {
+    // Reject direct symlinks (lstatSync does NOT follow symlinks).
+    const stat = external_fs_default().lstatSync(filePath);
+    if (stat.isSymbolicLink()) {
+        throw new Error(`Refusing to read symlink: ${filePath}`);
+    }
+    // Resolve the full chain and verify the result stays within the boundary.
+    // This catches symlinks on intermediate directory components.
+    const realPath = external_fs_default().realpathSync(filePath);
+    const realBoundary = external_fs_default().realpathSync(boundaryDir);
+    const relative = external_path_default().relative(realBoundary, realPath);
+    if (relative.startsWith('..' + (external_path_default()).sep) ||
+        relative === '..' ||
+        external_path_default().isAbsolute(relative)) {
+        throw new Error(`Path escapes workspace boundary: ${filePath}`);
+    }
+    return external_fs_default().readFileSync(realPath).toString();
+}
+/**
+ * Parse JSON without leaking file content in error messages.
+ *
+ * @param content - The string to parse.
+ * @param label   - A label for error messages (typically the file path).
+ * @return Parsed JSON value.
+ */
+function safeJsonParse(content, label) {
+    try {
+        return JSON.parse(content);
+    }
+    catch {
+        throw new Error(`Invalid JSON in ${label}`);
+    }
+}
 
 ;// CONCATENATED MODULE: ./src/tasks/check-description/index.ts
 
