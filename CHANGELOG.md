@@ -13,6 +13,9 @@ This is an alpha version! The changes listed here are not final.
 - Internal: No longer require automattic/jetpack-changelogger as a per-project dev dependency.
 - Update package dependencies.
 
+### Removed
+- Remove CRM-specific logic.
+
 ## [9.1.0] - 2026-04-13
 ### Security
 - Prevent fork PRs from creating new labels in the repository; only add labels that already exist. [#47349]

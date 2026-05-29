@@ -56369,7 +56369,7 @@ async function getFileDerivedLabels(octokit, owner, repo, number, isDraft, isRev
             keywords.add('[Extension] External Media');
         }
         // React Dashboard and Boost Admin.
-        const reactAdmin = file.match(/^(projects\/plugins\/(crm|boost\/app)\/admin|projects\/plugins\/jetpack\/_inc\/client)\//);
+        const reactAdmin = file.match(/^(projects\/plugins\/(boost\/app)\/admin|projects\/plugins\/jetpack\/_inc\/client)\//);
         if (reactAdmin !== null) {
             keywords.add('Admin Page');
         }
@@ -56382,16 +56382,6 @@ async function getFileDerivedLabels(octokit, owner, repo, number, isDraft, isRev
         const wpcomApi = file.match(/^projects\/plugins\/jetpack\/json-endpoints\//);
         if (wpcomApi !== null) {
             keywords.add('[Feature] WPCOM API');
-        }
-        // CRM elements.
-        const crmModules = file.match(/^projects\/plugins\/crm\/modules\/(?<crmModule>[^/]*)\//);
-        const crmModuleName = crmModules?.groups?.crmModule;
-        if (crmModuleName) {
-            keywords.add(`[CRM] ${clean_name(crmModuleName)} Module`);
-        }
-        const crmApi = file.match(/^projects\/plugins\/crm\/api\//);
-        if (crmApi !== null) {
-            keywords.add('[CRM] API');
         }
         // mu wpcom features.
         const muWpcomFeatures = file.match(/^projects\/packages\/jetpack-mu-wpcom\/src\/features\/(?<muWpcomFeature>[^/]*)\//);
@@ -56996,11 +56986,9 @@ async function buildMilestoneInfo(octokit, owner, repo, number) {
     for await (const plugin of plugins) {
         const nextMilestone = await get_next_valid_milestone(octokit, owner, repo, plugin);
         utils_debug(`check-description: Milestone found: ${JSON.stringify(nextMilestone)}`);
-        if ('crm' !== plugin) {
-            utils_debug(`check-description: getting milestone info for ${plugin}`);
-            const info = await getMilestoneDates(plugin, nextMilestone);
-            pluginInfo += info;
-        }
+        utils_debug(`check-description: getting milestone info for ${plugin}`);
+        const info = await getMilestoneDates(plugin, nextMilestone);
+        pluginInfo += info;
     }
     return pluginInfo;
 }
@@ -151607,7 +151595,7 @@ async function replyToCustomersReminder(payload, octokit) {
     }
     utils_debug(`reply-to-customers-reminder: Sending in Slack message about #${number}.`);
     const message = `This high priority issue was recently closed. It is now time to send follow-up replies to all impacted customers.
-${full_name.match(/^Automattic\/(jetpack|zero-bs-crm|themes)$/i)
+${full_name.match(/^Automattic\/(jetpack|themes)$/i)
         ? `
 
 Before you send follow-up replies, you'll want to make sure the fix has been deployed to all customers. Check the Pull Request that closed the issue to see when the fix will be deployed to customers.`
@@ -152241,12 +152229,6 @@ const automatticAssignments = {
         labels: ['[Package] Connection', '[Package] Identity Crisis', '[Package] Sync'],
         slack_id: 'C05PV073SG3',
         board_id: 'https://github.com/orgs/Automattic/projects/778',
-    },
-    CRM: {
-        team: 'Avengers',
-        labels: ['[Plugin] CRM'],
-        slack_id: 'CTXBP902X',
-        board_id: 'https://github.com/orgs/Automattic/projects/524',
     },
     'Monorepo tooling': {
         team: 'Jetpack Monorepo',
