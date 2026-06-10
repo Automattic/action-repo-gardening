@@ -59336,6 +59336,10 @@ async function checkDescription(payload, octokit) {
         utils_debug(`check-description: Automated stub update, skipping`);
         return;
     }
+    if (ref === 'update/pnpm_and_composer_lock_files' && author === 'matticbot') {
+        utils_debug(`check-description: Automated lock file update, skipping`);
+        return;
+    }
     utils_debug(`check-description: start building our comment`);
     // We'll add any remarks we may have about the PR to that comment body.
     let comment = `**Thank you for your PR!**
