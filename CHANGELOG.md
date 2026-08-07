@@ -16,6 +16,7 @@ This is an alpha version! The changes listed here are not final.
 
 ### Removed
 - Remove CRM-specific logic.
+- Remove inactive built-in Automattic issue-routing assignments.
 
 ## [9.1.0] - 2026-04-13
 ### Security
