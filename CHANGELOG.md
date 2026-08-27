@@ -18,6 +18,9 @@ This is an alpha version! The changes listed here are not final.
 - Remove CRM-specific logic.
 - Remove inactive built-in Automattic issue-routing assignments.
 
+### Fixed
+- Docs check: fix a stray literal dollar sign in log and notification messages.
+
 ## [9.1.0] - 2026-04-13
 ### Security
 - Prevent fork PRs from creating new labels in the repository; only add labels that already exist. [#47349]
