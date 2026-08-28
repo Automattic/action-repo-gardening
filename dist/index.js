@@ -23596,7 +23596,6 @@ async function getPluginNames(octokit, owner, repo, number) {
 async function addMilestone(payload, octokit) {
 	const { commits, ref, repository } = payload;
 	const { name: repo, owner } = repository;
-	const ownerLogin = owner.login;
 	if (ref !== "refs/heads/trunk") {
 		debug("add-milestone: Commit is not to `trunk`. Aborting");
 		return;
@@ -23606,6 +23605,11 @@ async function addMilestone(payload, octokit) {
 		debug("add-milestone: Commit is not a squashed PR. Aborting");
 		return;
 	}
+	if (!owner) {
+		debug("add-milestone: No owner supplied in push event. Aborting");
+		return;
+	}
+	const ownerLogin = owner.login;
 	const { data: { milestone: pullMilestone } } = await octokit.rest.issues.get({
 		owner: ownerLogin,
 		repo,
@@ -23646,6 +23650,10 @@ async function addMilestone(payload, octokit) {
 * @param octokit - Initialized Octokit REST client.
 */
 async function assignIssues(payload, octokit) {
+	if (!payload.pull_request.user) {
+		debug("assignIssues: No user supplied in pull_request event. Aborting.");
+		return;
+	}
 	const regex = /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved):? +(?:#{1}|https?:\/\/github\.com\/automattic\/jetpack\/issues\/)(\d+)/gi;
 	let match;
 	while (match = regex.exec(payload.pull_request.body ?? "")) {
@@ -27162,7 +27170,7 @@ async function getCheckComment(octokit, owner, repo, number) {
 	let commentID = 0;
 	debug(`check-description: Looking for a previous comment from this task in our PR.`);
 	const comments = await getComments(octokit, owner, repo, number);
-	for (const comment of comments) if (comment.user.login === "github-actions[bot]" && comment.body.includes("**Thank you for your PR!**")) commentID = comment.id;
+	for (const comment of comments) if (comment.user?.login === "github-actions[bot]" && comment.body.includes("**Thank you for your PR!**")) commentID = comment.id;
 	return commentID;
 }
 /**
@@ -27364,6 +27372,10 @@ async function updateLabels(payload, octokit) {
 * @param octokit - Initialized Octokit REST client.
 */
 async function checkDescription(payload, octokit) {
+	if (!payload.pull_request.user) {
+		debug(`check-description: No user supplied in pull_request event. Aborting.`);
+		return;
+	}
 	const { number, user: { login: author }, head: { ref } } = payload.pull_request;
 	const { name: repo, owner } = payload.repository;
 	const ownerLogin = owner.login;
@@ -129472,7 +129484,7 @@ async function sendSlackMessage(message, channel, payload, customMessageFormat =
 					type: "section",
 					text: {
 						type: "mrkdwn",
-						text: `PR created by ${user.login} in the <${repository.html_url}|${repository.full_name}> repo.`
+						text: `PR created by ${user?.login ?? "<unknown>"} in the <${repository.html_url}|${repository.full_name}> repo.`
 					}
 				},
 				{ type: "divider" },
@@ -129948,6 +129960,10 @@ async function flagOss(payload, octokit) {
 	const { head, base } = pull_request;
 	const { owner, name } = repository;
 	if (head.repo?.full_name === base.repo.full_name) return;
+	if (!head.user) {
+		debug(`flag-oss: No head.user supplied in pull_request event. Aborting.`);
+		return;
+	}
 	try {
 		await octokit.rest.orgs.checkMembershipForUser({
 			org: owner.login,
@@ -129981,7 +129997,7 @@ async function flagOss(payload, octokit) {
 async function getListComment(issueComments) {
 	let commentInfo = {};
 	debug(`gather-support-references: Looking for a previous comment from this task in our issue.`);
-	for (const comment of issueComments) if (comment.user.login === "github-actions[bot]" && comment.body.includes("**Support References**")) commentInfo = {
+	for (const comment of issueComments) if (comment.user?.login === "github-actions[bot]" && comment.body.includes("**Support References**")) commentInfo = {
 		id: comment.id,
 		body: comment.body
 	};
@@ -130018,7 +130034,7 @@ async function getIssueReferences(octokit, owner, repo, number, issueComments) {
 	});
 	if (body) ticketReferences.push(...body.matchAll(referencesRegexP));
 	debug(`gather-support-references: Getting references from comments.`);
-	for (const comment of issueComments) if (comment.user.login !== "github-actions[bot]" || !comment.body.includes("**Support References**")) ticketReferences.push(...comment.body.matchAll(referencesRegexP));
+	for (const comment of issueComments) if (comment.user?.login !== "github-actions[bot]" || !comment.body.includes("**Support References**")) ticketReferences.push(...comment.body.matchAll(referencesRegexP));
 	const correctedSupportIds = /* @__PURE__ */ new Set();
 	for (const reference of ticketReferences) {
 		let supportId = reference[0];
@@ -130428,7 +130444,7 @@ async function notifyEditorial(payload, octokit) {
 */
 async function hasManySupportReferences(issueComments) {
 	const referencesThreshhold = getInput("reply_to_customers_threshold");
-	for (const comment of issueComments) if (comment.user.login === "github-actions[bot]" && comment.body.includes("**Support References**")) {
+	for (const comment of issueComments) if (comment.user?.login === "github-actions[bot]" && comment.body.includes("**Support References**")) {
 		if (comment.body.split("- [ ] ").length - 1 >= parseInt(referencesThreshhold)) return true;
 	}
 	return false;
@@ -131386,6 +131402,10 @@ async function addCommentAskLabels(octokit, ownerLogin, authorLogin, repo, issue
 */
 async function triageIssues(payload, octokit) {
 	const { action, issue, repository } = payload;
+	if (!issue.user) {
+		debug(`triage-issues: No user supplied in issues event. Aborting.`);
+		return;
+	}
 	const { user: { login: authorLogin }, number, body, state } = issue;
 	const { owner, name, full_name } = repository;
 	const ownerLogin = owner.login;
