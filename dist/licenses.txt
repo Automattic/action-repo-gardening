@@ -779,23 +779,16 @@ SOFTWARE.
 ---
 
 Name: moment
-Version: 2.30.1
+Version: 2.31.0
 License: MIT
 Private: false
 Description: Parse, validate, manipulate, and display dates
-Repository: https://github.com/moment/moment.git
+Repository: github:moment/moment
 Homepage: https://momentjs.com
-Author: Iskren Ivov Chernev <iskren.chernev@gmail.com> (https://github.com/ichernev)
-Contributors:
-  Tim Wood <washwithcare@gmail.com> (http://timwoodcreates.com/)
-  Rocky Meza (http://rockymeza.com)
-  Matt Johnson <mj1856@hotmail.com> (http://codeofmatt.com)
-  Isaac Cambron <isaac@isaaccambron.com> (http://isaaccambron.com)
-  Andre Polykanine <andre@oire.org> (https://github.com/oire)
 License Text:
 ===
 
-Copyright (c) JS Foundation and other contributors
+Copyright (c) OpenJS Foundation and other contributors
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
