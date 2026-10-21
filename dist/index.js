@@ -20313,11 +20313,12 @@ async function addLabels(payload, octokit) {
 		return;
 	}
 	debug(`add-labels: Adding labels ${labelsToAdd} to PR #${number}`);
-	await octokit.rest.issues.addLabels({
+	const batchSize = 30;
+	for (let i = 0; i < labelsToAdd.length; i += batchSize) await octokit.rest.issues.addLabels({
 		owner: owner.login,
 		repo: name,
 		issue_number: number,
-		labels: labelsToAdd
+		labels: labelsToAdd.slice(i, i + batchSize)
 	});
 }
 //#endregion

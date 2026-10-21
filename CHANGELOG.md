@@ -12,6 +12,9 @@ This is an alpha version! The changes listed here are not final.
 ### Changed
 - Update package dependencies.
 
+### Fixed
+- Labels: Add in batches of 30 to prevent timeouts.
+
 ## [9.1.1] - 2026-10-15
 ### Changed
 - Exclude lockfile generation PRs from description check. [#49524]
