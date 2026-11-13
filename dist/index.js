@@ -20140,6 +20140,8 @@ async function getLabels(octokit, owner, repo, number) {
 	return labelList;
 }
 // src/tasks/add-labels/index.ts
+const PROJECT_LABEL_REGEX = /^(\[Action\]|\[Package\]|\[Plugin\]|\[JS Package\])/;
+const BOT_LOGIN = "github-actions[bot]";
 /**
 * Build a list of labels to add to the pull request, based off our file list.
 *
@@ -20226,6 +20228,48 @@ async function getFileDerivedLabels(octokit, owner, repo, number, isDraft, isRev
 	return [...keywords];
 }
 /**
+* Remove project labels the bot added earlier that no longer match the PR's files.
+*
+* Labels applied by anyone else are kept, even when no file matches them.
+*
+* @param octokit           - Initialized Octokit REST client.
+* @param owner             - Repository owner.
+* @param repo              - Repository name.
+* @param number            - PR number.
+* @param currentLabels     - Labels currently on the PR.
+* @param fileDerivedLabels - Labels matching the PR's current files.
+* @return Promise resolving to the labels that were removed.
+*/
+async function removeStaleProjectLabels(octokit, owner, repo, number, currentLabels, fileDerivedLabels) {
+	const derived = new Set(fileDerivedLabels.map((label) => label.toLowerCase()));
+	const candidates = currentLabels.filter((label) => PROJECT_LABEL_REGEX.test(label) && !derived.has(label.toLowerCase()));
+	if (candidates.length === 0) return [];
+	const events = await octokit.paginate(octokit.rest.issues.listEvents, {
+		owner,
+		repo,
+		issue_number: number,
+		per_page: 100
+	});
+	const appliedBy = /* @__PURE__ */ new Map();
+	for (const event of events) if (event.event === "labeled" && "label" in event && event.label?.name) appliedBy.set(event.label.name.toLowerCase(), event.actor?.login);
+	const removedLabels = [];
+	for (const label of candidates.filter((l) => appliedBy.get(l.toLowerCase()) === BOT_LOGIN)) {
+		debug(`add-labels: Removing ${label} from PR #${number}, as the PR no longer touches it.`);
+		try {
+			await octokit.rest.issues.removeLabel({
+				owner,
+				repo,
+				issue_number: number,
+				name: label
+			});
+			removedLabels.push(label);
+		} catch (error) {
+			debug(`add-labels: Could not remove ${label}: ${error}`);
+		}
+	}
+	return removedLabels;
+}
+/**
 * Adds appropriate labels to the specified PR.
 *
 * @param payload - Pull request event payload.
@@ -20240,8 +20284,13 @@ async function addLabels(payload, octokit) {
 	const isDraft = !!(pull_request && draft);
 	const isRevert = title.toLowerCase().includes("revert");
 	const fileDerivedLabels = await getFileDerivedLabels(octokit, owner.login, name, number, isDraft, isRevert);
-	const currentLabels = await getLabels(octokit, owner.login, name, number);
-	let labelsToAdd = fileDerivedLabels.filter((label) => !currentLabels.includes(label));
+	let currentLabels = await getLabels(octokit, owner.login, name, number);
+	if (payload.action === "synchronize" || payload.action === "edited" && !!payload.changes?.base) {
+		const removedLabels = await removeStaleProjectLabels(octokit, owner.login, name, number, currentLabels, fileDerivedLabels);
+		currentLabels = currentLabels.filter((label) => !removedLabels.includes(label));
+	}
+	const current = new Set(currentLabels.map((label) => label.toLowerCase()));
+	let labelsToAdd = fileDerivedLabels.filter((label) => !current.has(label.toLowerCase()));
 	if (labelsToAdd.length === 0) {
 		debug("add-labels: No new labels to add to that PR. Aborting.");
 		return;
@@ -20249,16 +20298,15 @@ async function addLabels(payload, octokit) {
 	if (head.repo?.full_name !== base.repo?.full_name) {
 		debug("add-labels: PR is from a fork. Filtering to only existing repo labels.");
 		const availableLabels = await getAvailableLabels(octokit, owner.login, name);
-		const availableLabelNames = new Set(availableLabels.map((label) => label.name));
-		labelsToAdd = labelsToAdd.filter((label) => availableLabelNames.has(label));
+		const availableLabelNames = new Set(availableLabels.map((label) => label.name.toLowerCase()));
+		labelsToAdd = labelsToAdd.filter((label) => availableLabelNames.has(label.toLowerCase()));
 	}
 	let maxLabelsToAdd = Math.max(0, maxLabels - currentLabels.length);
 	const hasBigProjectLabel = currentLabels.includes(bigProjectLabel);
 	if (hasBigProjectLabel) maxLabelsToAdd++;
 	if (labelsToAdd.length > maxLabelsToAdd) {
 		debug(`add-labels: Too many labels! Grouping project labels into '${bigProjectLabel}'.`);
-		const projectLabelRegex = /^(\[Action\]|\[Package\]|\[Plugin\]|\[JS Package\])/;
-		labelsToAdd = labelsToAdd.filter((label) => !projectLabelRegex.test(label));
+		labelsToAdd = labelsToAdd.filter((label) => !PROJECT_LABEL_REGEX.test(label));
 		if (!hasBigProjectLabel) labelsToAdd.unshift(bigProjectLabel);
 	} else if (hasBigProjectLabel) await octokit.rest.issues.removeLabel({
 		owner: owner.login,
